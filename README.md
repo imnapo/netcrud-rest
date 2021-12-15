@@ -1,2 +1,2 @@
-# dotnet-nv-aspnetcore
+# netcrud-rest
 Asp.net Core package for CRUD operations
