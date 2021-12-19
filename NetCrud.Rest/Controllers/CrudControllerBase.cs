@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NetCrud.Rest.Core;
 using NetCrud.Rest.Data;
+using NetCrud.Rest.Filters;
 using NetCrud.Rest.Models;
 using System;
 using System.Collections.Generic;
@@ -49,6 +50,7 @@ namespace NetCrud.Rest.Controllers
         }
 
         [HttpGet("{id}")]
+        
         public virtual async Task<IActionResult> GetAsync([FromRoute] TId id, [FromQuery] GetQueryStringParameters parameters)
         {
             var entity = await repository.FindByIdAsync(id, parameters.GetIncludes());
@@ -60,9 +62,10 @@ namespace NetCrud.Rest.Controllers
         }
 
         [HttpPost]
+        [ServiceFilter(typeof(CreateResourceActionFilter))]
         public virtual async Task<IActionResult> CreateAsync(TEntity entity)
         {
-            entity.CreatedAt = DateTime.UtcNow;
+            
             await repository.AddAsync(entity);
             await unitOfWork.CommitAsync();
 
@@ -71,6 +74,7 @@ namespace NetCrud.Rest.Controllers
         }
 
         [HttpPut("{id}")]
+        [ServiceFilter(typeof(UpdateResourceActionFilter))]
         public virtual async Task<IActionResult> UpdateAsync([FromRoute] TId id, [FromBody] TEntity request)
         {
             if (!request.Id.Equals(id))
@@ -84,6 +88,7 @@ namespace NetCrud.Rest.Controllers
         }
 
         [HttpPatch("{id}")]
+        [ServiceFilter(typeof(UpdateResourceActionFilter))]
         public virtual async Task<IActionResult> PatchAsync([FromRoute] TId id, [FromBody] JsonPatchDocument<TEntity> request)
         {
             if (request != null)
