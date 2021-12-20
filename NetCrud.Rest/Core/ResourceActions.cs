@@ -5,7 +5,7 @@ using System.Text;
 
 namespace NetCrud.Rest.Core
 {
-    public class ResourceActions<TEntity> : IResourceActions<TEntity> where TEntity : EntityBase
+    public class ResourceActions<TEntity, TId> : IResourceActions<TEntity> where TEntity : EntityBase<TId>
     {
         public virtual void AfterCreate(TEntity entity)
         {
@@ -26,5 +26,10 @@ namespace NetCrud.Rest.Core
         {
             return;
         }
+    }
+
+    public class ResourceActions<TEntity> : ResourceActions<TEntity, int> where TEntity : EntityBase<int>
+    {
+
     }
 }

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace NetCrud.Rest.Example.Models
 {
-    public class User : EntityBase
+    public class User : CrudEntity
     {
         public string Name { get; set; }
 
@@ -25,14 +25,14 @@ namespace NetCrud.Rest.Example.Models
         public ICollection<UserGame> UserGames { get; set; }
     }
 
-    public class Game : EntityBase
+    public class Game : CrudEntity
     {
         public string Name { get; set; }
 
         //public ICollection<User> Users { get; set; }
     }
 
-    public class UserGame : EntityBase
+    public class UserGame : CrudEntity
     {
         public User User { get; set; }
 

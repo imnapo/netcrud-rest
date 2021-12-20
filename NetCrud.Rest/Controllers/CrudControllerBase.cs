@@ -35,7 +35,7 @@ namespace NetCrud.Rest.Controllers
             }
             else
             {
-                var entities = await repository.FindPagedAsync(q => request.ApplyFilter(q), request.PageNumber, request.PageSize, false);
+                var entities = await repository.FindPagedAsync(q => request.ApplyFilter(q), request.PageNumber, request.PageSize, false, request.GetIncludes());
 
                 Pageable pageable = new Pageable();
                 pageable.LoadPagedList(entities);
@@ -80,7 +80,6 @@ namespace NetCrud.Rest.Controllers
             if (!request.Id.Equals(id))
                 return BadRequest();
 
-            request.ModifiedAt = DateTime.UtcNow;
             repository.Update(request);
             await unitOfWork.CommitAsync();
 
@@ -101,7 +100,7 @@ namespace NetCrud.Rest.Controllers
                     return BadRequest(ModelState);
                 }
 
-                entity.ModifiedAt = DateTime.UtcNow;
+   
                 await unitOfWork.CommitAsync();
 
                 return new ObjectResult(entity);
@@ -129,7 +128,7 @@ namespace NetCrud.Rest.Controllers
     }
 
     [ApiController]
-    public abstract class CrudControllerBase<TEntity> : CrudControllerBase<TEntity, int, GetAllQueryStringParameters<TEntity>> where TEntity : EntityBase
+    public abstract class CrudControllerBase<TEntity> : CrudControllerBase<TEntity, int, GetAllQueryStringParameters<TEntity>> where TEntity : EntityBase<int>
     {
         protected CrudControllerBase(IRepository<TEntity> repository, IUnitOfWork unitOfWork) : base(repository, unitOfWork)
         {
