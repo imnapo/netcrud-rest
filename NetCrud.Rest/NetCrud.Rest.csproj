@@ -2,10 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Authors>Narbe Hemet Siraki</Authors>
     <Description>Generic Library for easy creating CRUD rest api for dotnet core and entityframework</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageTags></PackageTags>
+    <Version>1.0.2</Version>
+    <Authors>Narbe Hemat Siraki</Authors>
   </PropertyGroup>
 
   <ItemGroup>

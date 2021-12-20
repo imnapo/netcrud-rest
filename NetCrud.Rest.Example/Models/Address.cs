@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace NetCrud.Rest.Example.Models
 {
-    public class Address : EntityBase
+    public class Address : CrudEntity
     {
         [ForeignKey("User")]
         public int UserId { get; set; }

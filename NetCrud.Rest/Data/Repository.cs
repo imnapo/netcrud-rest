@@ -10,7 +10,7 @@ using NetCrud.Rest.Models;
 
 namespace NetCrud.Rest.Data
 {
-    public class Repository<TEntity, TContext> : IRepository<TEntity> where TEntity : EntityBase where TContext : DbContext
+    public class Repository<TEntity, TId, TContext> : IRepository<TEntity> where TEntity : EntityBase<TId> where TContext : DbContext
     {
         protected TContext _context = null;
         protected DbSet<TEntity> _table = null;
@@ -191,6 +191,28 @@ namespace NetCrud.Rest.Data
             return query.ToList();
         }
 
+        public async Task<IList<TEntity>> FindAsync(System.Linq.Expressions.Expression<Func<TEntity, bool>> predicate, params string[] navigationProperties)
+        {
+            var q = _table.AsQueryable();
+            if (navigationProperties != null)
+                foreach (string tb in navigationProperties)
+                    q = q.Include(tb);
+
+            var result = q.Where(predicate);
+            return await result.ToListAsync();
+        }
+
+        public IList<TEntity> Find(System.Linq.Expressions.Expression<Func<TEntity, bool>> predicate, params string[] navigationProperties)
+        {
+            var q = _table.AsQueryable();
+            if (navigationProperties != null)
+                foreach (string tb in navigationProperties)
+                    q = q.Include(tb);
+
+            var result = q.Where(predicate);
+            return result.ToList();
+        }
+
         public async Task<bool> AnyAsync(System.Linq.Expressions.Expression<Func<TEntity, bool>> predicate)
         {
             return await _table.AnyAsync(predicate);
@@ -224,6 +246,24 @@ namespace NetCrud.Rest.Data
 
             return await query.ToPagedListAsync(pageIndex, pageSize, getOnlyTotalCount);
         }
+
+        public async Task<IPagedList<TEntity>> FindPagedAsync(System.Linq.Expressions.Expression<Func<TEntity, bool>> predicate, int pageIndex = 0, int pageSize = int.MaxValue, bool getOnlyTotalCount = false, params string[] navigationProperties)
+        {
+            var query = _table.AsQueryable();
+            if (navigationProperties != null)
+                foreach (string tb in navigationProperties)
+                    query = query.Include(tb);
+
+            query = query.Where(predicate);
+
+            return await query.ToPagedListAsync(pageIndex, pageSize, getOnlyTotalCount);
+        }
     }
 
+    public class Repository<TEntity, TContext>: Repository<TEntity, int, TContext> where TEntity : EntityBase<int> where TContext : DbContext {
+        public Repository(TContext Context) : base(Context)
+        {
+
+        }
+    }
 }

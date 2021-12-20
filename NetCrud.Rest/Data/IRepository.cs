@@ -19,9 +19,17 @@ namespace NetCrud.Rest.Data
         void Update(TEntity model);
         void Delete(TEntity model);
         Task<IList<TEntity>> FindAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, params string[] navigationProperties);
+
+        Task<IList<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, params string[] navigationProperties);
+
         IList<TEntity> Find(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, params string[] navigationProperties);
 
+        IList<TEntity> Find(Expression<Func<TEntity, bool>> predicate, params string[] navigationProperties);
+
+
         Task<IPagedList<TEntity>> FindPagedAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, int pageIndex = 0, int pageSize = int.MaxValue, bool getOnlyTotalCount = false, params string[] navigationProperties);
+
+        Task<IPagedList<TEntity>> FindPagedAsync(Expression<Func<TEntity, bool>> predicate, int pageIndex = 0, int pageSize = int.MaxValue, bool getOnlyTotalCount = false, params string[] navigationProperties);
 
         Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate);
         bool Any(Expression<Func<TEntity, bool>> predicate);

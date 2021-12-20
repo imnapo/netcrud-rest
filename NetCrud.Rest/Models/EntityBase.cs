@@ -8,10 +8,6 @@ namespace NetCrud.Rest.Models
     {
         public T Id { get; set; }
 
-        public DateTimeOffset CreatedAt { get; set; }
-
-        public DateTimeOffset ModifiedAt { get; set; }
-
         public override bool Equals(object obj)
         {
             var other = obj as EntityBase<T>;
@@ -55,8 +51,22 @@ namespace NetCrud.Rest.Models
 
     }
 
+    public class CrudEntity<TId> : EntityBase<TId>
+    {
+        public DateTimeOffset CreatedAt { get; set; }
+
+        public DateTimeOffset ModifiedAt { get; set; }
+    }
+
     public class EntityBase : EntityBase<int>
     {
 
+    }
+
+    public class CrudEntity : EntityBase<int>
+    {
+        public DateTimeOffset CreatedAt { get; set; }
+
+        public DateTimeOffset ModifiedAt { get; set; }
     }
 }
