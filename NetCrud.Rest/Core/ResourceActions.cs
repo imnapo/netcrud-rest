@@ -2,29 +2,40 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace NetCrud.Rest.Core
 {
     public class ResourceActions<TEntity, TId> : IResourceActions<TEntity> where TEntity : EntityBase<TId>
     {
-        public virtual void AfterCreate(TEntity entity)
+        public virtual Task AfterCreateAsync(TEntity entity)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        public virtual void AfterUpdate(TEntity entity)
+        public Task AfterDeleteAsync(object id)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        public virtual void BeforeCreate(TEntity entity)
+        public virtual Task AfterUpdateAsync(TEntity entity)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        public virtual void BeforeUpdate(TEntity entity)
+        public virtual Task BeforeCreateAsync(TEntity entity)
         {
-            return;
+            return Task.CompletedTask;
+        }
+
+        public Task BeforeDeleteAsync(object id)
+        {
+            return Task.CompletedTask;
+        }
+
+        public virtual Task BeforeUpdateAsync(TEntity entity)
+        {
+            return Task.CompletedTask;
         }
     }
 

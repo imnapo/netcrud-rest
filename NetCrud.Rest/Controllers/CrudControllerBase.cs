@@ -30,12 +30,12 @@ namespace NetCrud.Rest.Controllers
         {
             if (!request.Paged)
             {
-                var entities = await repository.FindAsync(q => request.ApplyFilter(q), request.GetIncludes());
+                var entities = await repository.FindAsync(q => request.ApplyFilter(q), q => request.ApplySort(q), request.GetIncludes());
                 return Ok(entities);
             }
             else
             {
-                var entities = await repository.FindPagedAsync(q => request.ApplyFilter(q), request.PageNumber, request.PageSize, false, request.GetIncludes());
+                var entities = await repository.FindPagedAsync(q => request.ApplyFilter(q), q => request.ApplySort(q), request.PageNumber, request.PageSize, false, request.GetIncludes());
 
                 Pageable pageable = new Pageable();
                 pageable.LoadPagedList(entities);

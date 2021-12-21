@@ -67,6 +67,7 @@ namespace NetCrud.Rest.Example
 
             services.AddHttpContextAccessor();
             services.AddScoped<CreateResourceActionFilter>();
+            services.AddScoped<UpdateResourceActionFilter>();
             services.AddScoped<IResourceActions<User>, UserActions>();
             services.AddSingleton(provider => new MapperConfiguration(cfg =>
             {

@@ -18,15 +18,17 @@ namespace NetCrud.Rest.Example.Definations
             this.httpContext = httpContextAccessor.HttpContext;
         }
 
-        public override void BeforeCreate(User entity)
+        public override Task BeforeCreateAsync(User entity)
         {
             entity.CreatedAt = DateTime.UtcNow;
             entity.ModifiedAt = DateTime.UtcNow;
+            return base.BeforeCreateAsync(entity);
         }
 
-        public override void BeforeUpdate(User entity)
+        public override Task BeforeUpdateAsync(User entity)
         {
             entity.ModifiedAt = DateTime.UtcNow;
+            return base.BeforeUpdateAsync(entity);
         }
 
     }

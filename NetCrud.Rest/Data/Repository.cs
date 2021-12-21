@@ -29,6 +29,8 @@ namespace NetCrud.Rest.Data
                 foreach (string tb in navigationProperties)
                     q = q.Include(tb);
 
+       
+
             return await q.ToListAsync();
         }
 
@@ -167,7 +169,7 @@ namespace NetCrud.Rest.Data
             _table.Remove(entity);
         }
 
-        public async Task<IList<TEntity>> FindAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, params string[] navigationProperties)
+        public async Task<IList<TEntity>> FindAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, params string[] navigationProperties)
         {
             var query = _table.AsQueryable();
             if (navigationProperties != null)
@@ -175,11 +177,11 @@ namespace NetCrud.Rest.Data
                     query = query.Include(tb);
 
             query = func != null ? func(query) : query;
-
+            query = sort != null ? sort(query) : query;
             return await query.ToListAsync();
         }
 
-        public IList<TEntity> Find(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, params string[] navigationProperties)
+        public IList<TEntity> Find(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, params string[] navigationProperties)
         {
             var query = _table.AsQueryable();
             if (navigationProperties != null)
@@ -187,6 +189,7 @@ namespace NetCrud.Rest.Data
                     query = query.Include(tb);
 
             query = func != null ? func(query) : query;
+            query = sort != null ? sort(query) : query;
 
             return query.ToList();
         }
@@ -235,7 +238,7 @@ namespace NetCrud.Rest.Data
 
         }
 
-        public async Task<IPagedList<TEntity>> FindPagedAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, int pageIndex = 0, int pageSize = int.MaxValue, bool getOnlyTotalCount = false, params string[] navigationProperties)
+        public async Task<IPagedList<TEntity>> FindPagedAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, int pageIndex = 0, int pageSize = int.MaxValue, bool getOnlyTotalCount = false, params string[] navigationProperties)
         {
             var query = _table.AsQueryable();
             if (navigationProperties != null)
@@ -243,6 +246,7 @@ namespace NetCrud.Rest.Data
                     query = query.Include(tb);
 
             query = func != null ? func(query) : query;
+            query = sort != null ? sort(query) : query;
 
             return await query.ToPagedListAsync(pageIndex, pageSize, getOnlyTotalCount);
         }

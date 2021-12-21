@@ -55,7 +55,7 @@ namespace NetCrud.Rest.Core
         }
         };
 
-        public static string Deserialize(string queries)
+        public static string DeserializeFilter(string queries)
         {
             int ptStartIndex = queries.IndexOf('(');
             if (ptStartIndex < 0) return queries.UppercaseFirst();
@@ -102,7 +102,7 @@ namespace NetCrud.Rest.Core
                 List<string> results = new List<string>();
                 foreach (var item in args)
                 {
-                    results.Add(Deserialize(item));
+                    results.Add(DeserializeFilter(item));
 
                 }
 
@@ -121,6 +121,16 @@ namespace NetCrud.Rest.Core
             }
         }
 
+        public static string DeserializeSort(string sortQuery)
+        {
+            string[] orders = sortQuery.Split(",").Select(s =>
+            {
+                return (s.StartsWith("-") ? $"{s.Substring(1).UppercaseFirst()} DESC" : s.UppercaseFirst());
+            }).ToArray();
+            if (orders != null && orders.Count() > 0)
+                return string.Join(",", orders);
+            else return "";
+        }
     }
 
     public class QueryFunction

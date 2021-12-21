@@ -42,13 +42,26 @@ namespace NetCrud.Rest.Core
 
         public string Filter { get; set; }
 
+        public string Sort { get; set; }
+
         public virtual IQueryable<TEntity> ApplyFilter(IQueryable<TEntity> query)
         {
             if (!string.IsNullOrWhiteSpace(Filter))
             {
-                string deserializedFilter = QueryStringDeserialzer.Deserialize(Filter);
+                string deserializedFilter = QueryStringDeserialzer.DeserializeFilter(Filter);
+
                 return query.Where(deserializedFilter);
 
+            }
+            else return query;
+        }
+
+        public virtual IQueryable<TEntity> ApplySort(IQueryable<TEntity> query)
+        {
+            if (!string.IsNullOrWhiteSpace(Sort))
+            {
+                string deserializedSort = QueryStringDeserialzer.DeserializeSort(Sort);
+                return query.OrderBy(deserializedSort);
             }
             else return query;
         }
