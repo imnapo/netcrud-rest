@@ -29,16 +29,17 @@ namespace NetCrud.Rest.Data
                 foreach (string tb in navigationProperties)
                     q = q.Include(tb);
 
-       
+
 
             return await q.ToListAsync();
         }
 
         public TEntity FindById(object id, params string[] navigationProperties)
         {
-            Type typeParameterType = typeof(TEntity);
+
 
             var q = _table.Find(id);
+            Type typeParameterType = q.GetType();
             if (q != null && navigationProperties != null)
                 foreach (string tb in navigationProperties)
                 {
@@ -78,40 +79,32 @@ namespace NetCrud.Rest.Data
 
         public async Task<TEntity> FindByIdAsync(object id, params string[] navigationProperties)
         {
-            Type typeParameterType = typeof(TEntity);
-
             var q = await _table.FindAsync(id);
+
             if (q != null && navigationProperties != null)
                 foreach (string tb in navigationProperties)
                 {
-                    bool isCollection = false;
-                    var propType = typeParameterType.GetProperty(tb).PropertyType;
-
-                    if (propType.IsGenericType && propType.GetGenericTypeDefinition()
-                            == typeof(ICollection<>))
+                    object entity = q;
+                    var properties = tb.Split(".");
+                    foreach (var property in properties)
                     {
-                        isCollection = true;
-                    }
-
-                    if (!isCollection)
-                        foreach (Type interfaceType in propType.GetInterfaces())
+                        Type typeParameterType = entity.GetType();
+                        if (typeParameterType.IsGenericType && (typeParameterType.GetGenericTypeDefinition()
+                            == typeof(HashSet<>) || typeParameterType.GetGenericTypeDefinition()
+                            == typeof(ICollection<>)))
                         {
-                            if (interfaceType.IsGenericType &&
-                                interfaceType.GetGenericTypeDefinition()
-                                == typeof(ICollection<>))
+                            var v = (IEnumerable)entity;
+                            foreach (var item in v)
                             {
-                                isCollection = true;
-                                break;
+                                await _context.Entry(item).Navigation(property).LoadAsync();
                             }
+                            break;
                         }
-
-                    if (isCollection)
-                    {
-                        await _context.Entry(q).Collection(tb).LoadAsync();
-                    }
-                    else
-                    {
-                        await _context.Entry(q).Reference(tb).LoadAsync();
+                        else
+                        {
+                            await _context.Entry(entity).Navigation(property).LoadAsync();
+                        }
+                        entity = entity.GetType().GetProperty(property).GetValue(entity);
                     }
                 }
 
@@ -264,7 +257,8 @@ namespace NetCrud.Rest.Data
         }
     }
 
-    public class Repository<TEntity, TContext>: Repository<TEntity, int, TContext> where TEntity : EntityBase<int> where TContext : DbContext {
+    public class Repository<TEntity, TContext> : Repository<TEntity, int, TContext> where TEntity : EntityBase<int> where TContext : DbContext
+    {
         public Repository(TContext Context) : base(Context)
         {
 
