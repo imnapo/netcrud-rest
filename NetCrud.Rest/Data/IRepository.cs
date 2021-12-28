@@ -13,10 +13,10 @@ namespace NetCrud.Rest.Data
     {
         Task<IList<TEntity>> FindAllAsync(params string[] navigationProperties);
 
-        Task<TEntity> FindByIdAsync(object id, params string[] navigationProperties);
+        Task<TEntity> FindByIdAsync(object id, bool forUpdate = false, params string[] navigationProperties);
         TEntity FindById(object id, params string[] navigationProperties);
         Task AddAsync(TEntity model);
-        void Update(TEntity model);
+        void Update(TEntity model, bool attach = true);
         void Delete(TEntity model);
         Task<IList<TEntity>> FindAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, params string[] navigationProperties);
 

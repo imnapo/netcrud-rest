@@ -53,7 +53,7 @@ namespace NetCrud.Rest.Controllers
         
         public virtual async Task<IActionResult> GetAsync([FromRoute] TId id, [FromQuery] GetQueryStringParameters parameters)
         {
-            var entity = await repository.FindByIdAsync(id, parameters.GetIncludes());
+            var entity = await repository.FindByIdAsync(id, false, parameters.GetIncludes());
 
             if (entity == null)
                 return NotFound();
@@ -83,27 +83,27 @@ namespace NetCrud.Rest.Controllers
             repository.Update(request);
             await unitOfWork.CommitAsync();
 
-            return new ObjectResult(request);
+            return Ok(request);
         }
 
         [HttpPatch("{id}")]
-        [ServiceFilter(typeof(UpdateResourceActionFilter))]
+        //[ServiceFilter(typeof(UpdateResourceActionFilter))]
         public virtual async Task<IActionResult> PatchAsync([FromRoute] TId id, [FromBody] JsonPatchDocument<TEntity> request)
         {
             if (request != null)
             {
-                var entity = await repository.FindByIdAsync(id);
+                var entity = await repository.FindByIdAsync(id, forUpdate: true);
                 request.ApplyTo(entity, ModelState);
-
+                repository.Update(entity, false);
+                
                 if (!ModelState.IsValid)
                 {
                     return BadRequest(ModelState);
                 }
-
-   
+  
                 await unitOfWork.CommitAsync();
 
-                return new ObjectResult(entity);
+                return Ok(entity);
 
             }
             else

@@ -31,7 +31,7 @@ namespace NetCrud.Rest.Filters
                 {
                     var service = serviceProvider.GetRequiredService(type);
                     var mth = service.GetType().GetMethod("BeforeCreateAsync");
-                    var task =(Task)mth.Invoke(service, new[] { entity });
+                    var task = (Task)mth.Invoke(service, new[] { entity });
                     await task.ConfigureAwait(false);
 
                     var resultProperty = task.GetType().GetProperty("Result");
@@ -42,17 +42,18 @@ namespace NetCrud.Rest.Filters
 
             var resultContext = await next();
             var myResult = (OkObjectResult)resultContext.Result;
-            try
-            {
-                Type type = typeof(IResourceActions<>).MakeGenericType(myResult.Value.GetType());
-                var service = serviceProvider.GetRequiredService(type);
-                var method = service.GetType().GetMethod("AfterCreateAsync");
-                var task = (Task)method.Invoke(service, new[] { myResult.Value });
-                await task.ConfigureAwait(false);
+            if (myResult != null)
+                try
+                {
+                    Type type = typeof(IResourceActions<>).MakeGenericType(myResult.Value.GetType());
+                    var service = serviceProvider.GetRequiredService(type);
+                    var method = service.GetType().GetMethod("AfterCreateAsync");
+                    var task = (Task)method.Invoke(service, new[] { myResult.Value });
+                    await task.ConfigureAwait(false);
 
-                var resultProperty = task.GetType().GetProperty("Result");
-            }
-            catch { }
+                    var resultProperty = task.GetType().GetProperty("Result");
+                }
+                catch { }
         }
     }
 }

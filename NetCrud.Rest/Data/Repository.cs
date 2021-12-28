@@ -36,62 +36,68 @@ namespace NetCrud.Rest.Data
 
         public TEntity FindById(object id, params string[] navigationProperties)
         {
-
-
             var q = _table.Find(id);
-            Type typeParameterType = q.GetType();
             if (q != null && navigationProperties != null)
                 foreach (string tb in navigationProperties)
                 {
-                    bool isCollection = false;
-                    var propType = typeParameterType.GetProperty(tb).PropertyType;
-
-                    if (propType.IsGenericType && propType.GetGenericTypeDefinition()
-                            == typeof(ICollection<>))
+                    bool parentIsCollection = false;
+                    object entity = q;
+                    var properties = tb.Split(".");
+                    foreach (var property in properties)
                     {
-                        isCollection = true;
-                    }
+                        if (entity == null) break;
 
-                    if (!isCollection)
-                        foreach (Type interfaceType in propType.GetInterfaces())
+                        if (parentIsCollection)
                         {
-                            if (interfaceType.IsGenericType &&
-                                interfaceType.GetGenericTypeDefinition()
-                                == typeof(ICollection<>))
+                            var v = (IEnumerable)entity;
+                            foreach (var item in v)
                             {
-                                isCollection = true;
-                                break;
+                                _context.Entry(item).Navigation(property).Load();
                             }
+                            break;
+                        }
+                        else
+                        {
+                            _context.Entry(entity).Navigation(property).LoadAsync();
                         }
 
-                    if (isCollection)
-                    {
-                        _context.Entry(q).Collection(tb).LoadAsync();
-                    }
-                    else
-                    {
-                        _context.Entry(q).Reference(tb).LoadAsync();
+                        Type typeParameterType = entity.GetType().GetProperty(property).PropertyType;
+
+                        if (typeParameterType.IsGenericType && ((typeParameterType.GetGenericTypeDefinition()
+                            == typeof(HashSet<>)) || (typeParameterType.GetGenericTypeDefinition()
+                            == typeof(ICollection<>)) || (typeParameterType.GetGenericTypeDefinition()
+                            == typeof(IList<>))))
+                        {
+                            parentIsCollection = true;
+                        }
+                        else parentIsCollection = false;
+
+                        entity = entity.GetType().GetProperty(property).GetValue(entity);
                     }
                 }
 
             return q;
         }
 
-        public async Task<TEntity> FindByIdAsync(object id, params string[] navigationProperties)
+        public async Task<TEntity> FindByIdAsync(object id, bool forUpdate = false, params string[] navigationProperties)
         {
             var q = await _table.FindAsync(id);
+            if (forUpdate)
+            {
+                navigationProperties = GetAllInclues(q);
+            }
 
             if (q != null && navigationProperties != null)
                 foreach (string tb in navigationProperties)
                 {
+                    bool parentIsCollection = false;
                     object entity = q;
                     var properties = tb.Split(".");
                     foreach (var property in properties)
                     {
-                        Type typeParameterType = entity.GetType();
-                        if (typeParameterType.IsGenericType && (typeParameterType.GetGenericTypeDefinition()
-                            == typeof(HashSet<>) || typeParameterType.GetGenericTypeDefinition()
-                            == typeof(ICollection<>)))
+                        if (entity == null) break;
+
+                        if (parentIsCollection)
                         {
                             var v = (IEnumerable)entity;
                             foreach (var item in v)
@@ -104,6 +110,18 @@ namespace NetCrud.Rest.Data
                         {
                             await _context.Entry(entity).Navigation(property).LoadAsync();
                         }
+
+                        Type typeParameterType = entity.GetType().GetProperty(property).PropertyType;
+
+                        if (typeParameterType.IsGenericType && ((typeParameterType.GetGenericTypeDefinition()
+                            == typeof(HashSet<>)) || (typeParameterType.GetGenericTypeDefinition()
+                            == typeof(ICollection<>)) || (typeParameterType.GetGenericTypeDefinition()
+                            == typeof(IList<>))))
+                        {
+                            parentIsCollection = true;
+                        }
+                        else parentIsCollection = false;
+
                         entity = entity.GetType().GetProperty(property).GetValue(entity);
                     }
                 }
@@ -113,13 +131,38 @@ namespace NetCrud.Rest.Data
 
         public async Task AddAsync(TEntity entity)
         {
-            setUnchange(entity);
             await _table.AddAsync(entity);
+            setUnchange(entity);
         }
-
 
         private void setUnchange(object entity)
         {
+            var modifiedEntities = _context.ChangeTracker.Entries()
+            .Where(p => p.State == EntityState.Modified).ToList();
+
+            foreach (var item in modifiedEntities)
+            {
+                var a = item.Entity;
+                if (entity != a)
+                    item.State = EntityState.Unchanged;
+            }
+
+            modifiedEntities = _context.ChangeTracker.Entries()
+            .Where(p => p.State == EntityState.Added).ToList();
+
+            foreach (var item in modifiedEntities)
+            {
+                var a = item.Entity as EntityBase;
+                if (a != null && a.Id > 0)
+                    item.State = EntityState.Unchanged;
+            }
+
+            return;
+
+
+            var mems = _context.Entry(entity).Members.ToList();
+
+
             if (entity == null) return;
             //Type typeParameterType = typeof(TEntity);
             Type typeParameterType = entity.GetType();
@@ -136,8 +179,11 @@ namespace NetCrud.Rest.Data
                     }
                     setUnchange(p.GetValue(entity));
                 }
-                else if (type.IsGenericType && type.GetGenericTypeDefinition()
-                      == typeof(ICollection<>) && typeof(EntityBase).IsAssignableFrom(type.GetGenericArguments()[0]))
+                else if (type.IsGenericType && (
+                    type.GetGenericTypeDefinition() == typeof(ICollection<>) ||
+                    type.GetGenericTypeDefinition() == typeof(IList<>) ||
+                    type.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+                      ) && typeof(EntityBase).IsAssignableFrom(type.GetGenericArguments()[0]))
                 {
                     var values = p.GetValue(entity) as ICollection;
 
@@ -155,6 +201,34 @@ namespace NetCrud.Rest.Data
                 }
 
             }
+        }
+
+        private string[] GetAllInclues(object entity)
+        {
+            List<string> inclues = new List<string>();
+            Type typeParameterType = entity.GetType();
+            var props = typeParameterType.GetProperties();
+            foreach (var p in props)
+            {
+                var attrs = p.GetCustomAttributes(false).ToDictionary(a => a.GetType().Name, a => a);
+                if (attrs.ContainsKey("NotMappedAttribute"))
+                    continue;
+                var type = p.PropertyType;
+                if (type.IsClass && typeof(EntityBase).IsAssignableFrom(type))
+                {
+                    inclues.Add(p.Name);
+                }
+                else if (type.IsGenericType && (
+                    type.GetGenericTypeDefinition() == typeof(ICollection<>) ||
+                    type.GetGenericTypeDefinition() == typeof(IList<>) ||
+                    type.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+                      ) && typeof(EntityBase).IsAssignableFrom(type.GetGenericArguments()[0]))
+                {
+                    inclues.Add(p.Name);
+                }
+
+            }
+            return inclues.ToArray();
         }
 
         public void Delete(TEntity entity)
@@ -224,10 +298,11 @@ namespace NetCrud.Rest.Data
             //_context.Dispose();
         }
 
-        public void Update(TEntity model)
+        public void Update(TEntity model, bool attach = true)
         {
             setUnchange(model);
-            var entityTracking = _table.Update(model);
+            if (attach)
+                _table.Update(model);
 
         }
 
