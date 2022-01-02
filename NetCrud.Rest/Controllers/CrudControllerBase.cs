@@ -26,7 +26,7 @@ namespace NetCrud.Rest.Controllers
         }
 
         [HttpGet]
-        public virtual async Task<IActionResult> GetAllAsync([FromQuery] TParams request /*[FromHeader(Name = "Accept")] string mediaType*/)
+        public virtual async Task<IActionResult> GetAllAsync([FromQuery] TParams request)
         {
             if (!request.Paged)
             {
@@ -35,7 +35,7 @@ namespace NetCrud.Rest.Controllers
             }
             else
             {
-                var entities = await repository.FindPagedAsync(q => request.ApplyFilter(q), q => request.ApplySort(q), request.PageNumber, request.PageSize, false, request.GetIncludes());
+                var entities = await repository.FindPagedAsync(q => request.ApplyFilter(q), q => request.ApplySort(q), request.PageNumber - 1, request.PageSize, false, request.GetIncludes());
 
                 Pageable pageable = new Pageable();
                 pageable.LoadPagedList(entities);
@@ -64,13 +64,10 @@ namespace NetCrud.Rest.Controllers
         [HttpPost]
         [ServiceFilter(typeof(CreateResourceActionFilter))]
         public virtual async Task<IActionResult> CreateAsync(TEntity entity)
-        {
-            
+        {        
             await repository.AddAsync(entity);
             await unitOfWork.CommitAsync();
-
             return Ok(entity);
-            //return CreatedAtAction("Detail", new { id = entity.Id }, entity);
         }
 
         [HttpPut("{id}")]

@@ -25,9 +25,9 @@ namespace NetCrud.Rest.Core
         public bool Paged { get; set; } = true;
 
         const int maxPageSize = 50;
-        public int PageNumber { get; set; } = 0;
+        public int PageNumber { get; set; } = 1;
 
-        private int _pageSize = 10;
+        private int _pageSize = 20;
         public int PageSize
         {
             get

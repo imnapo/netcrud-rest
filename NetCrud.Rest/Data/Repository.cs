@@ -25,9 +25,11 @@ namespace NetCrud.Rest.Data
             var q = _table.AsQueryable();
 
 
+
             if (navigationProperties != null)
                 foreach (string tb in navigationProperties)
-                    q = q.Include(tb);
+                    foreach (var item in getLoadRelations(tb))
+                        q = q.Include(item);
 
 
 
@@ -40,39 +42,44 @@ namespace NetCrud.Rest.Data
             if (q != null && navigationProperties != null)
                 foreach (string tb in navigationProperties)
                 {
-                    bool parentIsCollection = false;
-                    object entity = q;
-                    var properties = tb.Split(".");
-                    foreach (var property in properties)
+                    var relations = getLoadRelations(tb);
+                    foreach (var tbItem in relations)
                     {
-                        if (entity == null) break;
+                        bool parentIsCollection = false;
+                        object entity = q;
+                        var properties = tbItem.Split(".");
 
-                        if (parentIsCollection)
+                        foreach (var property in properties)
                         {
-                            var v = (IEnumerable)entity;
-                            foreach (var item in v)
+                            if (entity == null) break;
+
+                            if (parentIsCollection)
                             {
-                                _context.Entry(item).Navigation(property).Load();
+                                var v = (IEnumerable)entity;
+                                foreach (var item in v)
+                                {
+                                    _context.Entry(item).Navigation(property).Load();
+                                }
+                                break;
                             }
-                            break;
-                        }
-                        else
-                        {
-                            _context.Entry(entity).Navigation(property).LoadAsync();
-                        }
+                            else
+                            {
+                                _context.Entry(entity).Navigation(property).LoadAsync();
+                            }
 
-                        Type typeParameterType = entity.GetType().GetProperty(property).PropertyType;
+                            Type typeParameterType = entity.GetType().GetProperty(property).PropertyType;
 
-                        if (typeParameterType.IsGenericType && ((typeParameterType.GetGenericTypeDefinition()
-                            == typeof(HashSet<>)) || (typeParameterType.GetGenericTypeDefinition()
-                            == typeof(ICollection<>)) || (typeParameterType.GetGenericTypeDefinition()
-                            == typeof(IList<>))))
-                        {
-                            parentIsCollection = true;
+                            if (typeParameterType.IsGenericType && ((typeParameterType.GetGenericTypeDefinition()
+                                == typeof(HashSet<>)) || (typeParameterType.GetGenericTypeDefinition()
+                                == typeof(ICollection<>)) || (typeParameterType.GetGenericTypeDefinition()
+                                == typeof(IList<>))))
+                            {
+                                parentIsCollection = true;
+                            }
+                            else parentIsCollection = false;
+
+                            entity = entity.GetType().GetProperty(property).GetValue(entity);
                         }
-                        else parentIsCollection = false;
-
-                        entity = entity.GetType().GetProperty(property).GetValue(entity);
                     }
                 }
 
@@ -90,39 +97,43 @@ namespace NetCrud.Rest.Data
             if (q != null && navigationProperties != null)
                 foreach (string tb in navigationProperties)
                 {
-                    bool parentIsCollection = false;
-                    object entity = q;
-                    var properties = tb.Split(".");
-                    foreach (var property in properties)
+                    var relations = getLoadRelations(tb);
+                    foreach (var tbItem in relations)
                     {
-                        if (entity == null) break;
-
-                        if (parentIsCollection)
+                        bool parentIsCollection = false;
+                        object entity = q;
+                        var properties = tbItem.Split(".");
+                        foreach (var property in properties)
                         {
-                            var v = (IEnumerable)entity;
-                            foreach (var item in v)
+                            if (entity == null) break;
+
+                            if (parentIsCollection)
                             {
-                                await _context.Entry(item).Navigation(property).LoadAsync();
+                                var v = (IEnumerable)entity;
+                                foreach (var item in v)
+                                {
+                                    await _context.Entry(item).Navigation(property).LoadAsync();
+                                }
+                                break;
                             }
-                            break;
-                        }
-                        else
-                        {
-                            await _context.Entry(entity).Navigation(property).LoadAsync();
-                        }
+                            else
+                            {
+                                await _context.Entry(entity).Navigation(property).LoadAsync();
+                            }
 
-                        Type typeParameterType = entity.GetType().GetProperty(property).PropertyType;
+                            Type typeParameterType = entity.GetType().GetProperty(property).PropertyType;
 
-                        if (typeParameterType.IsGenericType && ((typeParameterType.GetGenericTypeDefinition()
-                            == typeof(HashSet<>)) || (typeParameterType.GetGenericTypeDefinition()
-                            == typeof(ICollection<>)) || (typeParameterType.GetGenericTypeDefinition()
-                            == typeof(IList<>))))
-                        {
-                            parentIsCollection = true;
+                            if (typeParameterType.IsGenericType && ((typeParameterType.GetGenericTypeDefinition()
+                                == typeof(HashSet<>)) || (typeParameterType.GetGenericTypeDefinition()
+                                == typeof(ICollection<>)) || (typeParameterType.GetGenericTypeDefinition()
+                                == typeof(IList<>))))
+                            {
+                                parentIsCollection = true;
+                            }
+                            else parentIsCollection = false;
+
+                            entity = entity.GetType().GetProperty(property).GetValue(entity);
                         }
-                        else parentIsCollection = false;
-
-                        entity = entity.GetType().GetProperty(property).GetValue(entity);
                     }
                 }
 
@@ -131,6 +142,10 @@ namespace NetCrud.Rest.Data
 
         public async Task AddAsync(TEntity entity)
         {
+            foreach (var dbEntityEntry in _context.ChangeTracker.Entries())
+            {
+                _context.Entry(dbEntityEntry.Entity).State = EntityState.Detached;
+            }
             await _table.AddAsync(entity);
             setUnchange(entity);
         }
@@ -152,14 +167,30 @@ namespace NetCrud.Rest.Data
 
             foreach (var item in modifiedEntities)
             {
-                var a = item.Entity as EntityBase;
-                if (a != null && a.Id > 0)
-                    item.State = EntityState.Unchanged;
+
+                if (IsInheritFromEntityBase(item.Entity))
+                {
+                    object value = item.Entity.GetType().GetProperty("Id")?.GetValue(item.Entity);
+                    if (value is ValueType)
+                    {
+                        object obj = Activator.CreateInstance(value.GetType());
+                        if(!obj.Equals(value))
+                        {
+                            _context.Entry(item.Entity).State = EntityState.Unchanged;
+                        }
+                    }
+                    else if(value != null)
+                    {
+                        _context.Entry(item.Entity).State = EntityState.Unchanged;
+                    }
+                    
+                }
+
             }
+        }
 
-            return;
-
-
+        private void setUnchangeOld(object entity)
+        {
             var mems = _context.Entry(entity).Members.ToList();
 
 
@@ -202,6 +233,39 @@ namespace NetCrud.Rest.Data
 
             }
         }
+        private bool IsInheritFromEntityBase(object entity)
+        {
+            var type2 = entity.GetType();
+            while (type2 != null)
+            {
+                if (type2.IsGenericType && type2.GetGenericTypeDefinition() == typeof(EntityBase<>))
+                {
+                    return true;
+                    //var inType = type2.GetGenericArguments()[0];
+                }
+                type2 = type2.BaseType;
+            }
+            return false;
+        }
+
+        private string[] getLoadRelations(string propName)
+        {
+            if (propName.Contains(".")) return new string[] { propName };
+            Type typeParameterType = typeof(TEntity);
+            var property = typeParameterType.GetProperty(propName);
+            if (property != null)
+            {
+                var attrs = property.GetCustomAttributes(false).ToDictionary(a => a.GetType().Name, a => a);
+                if (attrs.ContainsKey(typeof(LoadRelationAttribute).Name))
+                {
+                    var attr = attrs["LoadRelationAttribute"] as LoadRelationAttribute;
+                    return attr.Includes;
+                }
+                else return new string[] { propName };
+            }
+            else return new string[] { };
+
+        }
 
         private string[] GetAllInclues(object entity)
         {
@@ -241,7 +305,8 @@ namespace NetCrud.Rest.Data
             var query = _table.AsQueryable();
             if (navigationProperties != null)
                 foreach (string tb in navigationProperties)
-                    query = query.Include(tb);
+                    foreach (var item in getLoadRelations(tb))
+                        query = query.Include(item);
 
             query = func != null ? func(query) : query;
             query = sort != null ? sort(query) : query;
@@ -253,7 +318,8 @@ namespace NetCrud.Rest.Data
             var query = _table.AsQueryable();
             if (navigationProperties != null)
                 foreach (string tb in navigationProperties)
-                    query = query.Include(tb);
+                    foreach (var item in getLoadRelations(tb))
+                        query = query.Include(item);
 
             query = func != null ? func(query) : query;
             query = sort != null ? sort(query) : query;
@@ -266,7 +332,8 @@ namespace NetCrud.Rest.Data
             var q = _table.AsQueryable();
             if (navigationProperties != null)
                 foreach (string tb in navigationProperties)
-                    q = q.Include(tb);
+                    foreach (var item in getLoadRelations(tb))
+                        q = q.Include(item);
 
             var result = q.Where(predicate);
             return await result.ToListAsync();
@@ -277,7 +344,8 @@ namespace NetCrud.Rest.Data
             var q = _table.AsQueryable();
             if (navigationProperties != null)
                 foreach (string tb in navigationProperties)
-                    q = q.Include(tb);
+                    foreach (var item in getLoadRelations(tb))
+                        q = q.Include(item);
 
             var result = q.Where(predicate);
             return result.ToList();
@@ -311,7 +379,8 @@ namespace NetCrud.Rest.Data
             var query = _table.AsQueryable();
             if (navigationProperties != null)
                 foreach (string tb in navigationProperties)
-                    query = query.Include(tb);
+                    foreach (var item in getLoadRelations(tb))
+                        query = query.Include(item);
 
             query = func != null ? func(query) : query;
             query = sort != null ? sort(query) : query;
@@ -324,7 +393,8 @@ namespace NetCrud.Rest.Data
             var query = _table.AsQueryable();
             if (navigationProperties != null)
                 foreach (string tb in navigationProperties)
-                    query = query.Include(tb);
+                    foreach (var item in getLoadRelations(tb))
+                        query = query.Include(item);
 
             query = query.Where(predicate);
 

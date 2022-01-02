@@ -52,10 +52,19 @@ namespace NetCrud.Rest.Core
         Name = "not",
         Args = 1,
         Format = "!{0}"
+        }, new QueryFunction {
+        Name = "has",
+        Args = 1,
+        Format = "{0}.Any()"
+        }, new QueryFunction {
+        Name = "any",
+        Args = 2,
+        AddParenthesis = false,
+        Format = "{0}.Any(x=>x.{1})"
         }
         };
 
-        public static string DeserializeFilter(string queries)
+        public static string DeserializeFilter(string queries, bool addParenthesis = true)
         {
             int ptStartIndex = queries.IndexOf('(');
             if (ptStartIndex < 0) return queries.UppercaseFirst();
@@ -94,7 +103,7 @@ namespace NetCrud.Rest.Core
                     prevIndex = commaIndex[i];
                 }
 
-                string arg2 = argsString.Substring(prevIndex + 1);
+                string arg2 = commaIndex.Count > 0 ? argsString.Substring(prevIndex + 1) : argsString;
                 arg2 = arg2.StartsWith("'") && arg2.EndsWith("'") ? $"\"{arg2.Substring(1, arg2.Length - 2)}\"" : arg2;
 
                 args.Add(arg2);
@@ -102,11 +111,12 @@ namespace NetCrud.Rest.Core
                 List<string> results = new List<string>();
                 foreach (var item in args)
                 {
-                    results.Add(DeserializeFilter(item));
+                    results.Add(DeserializeFilter(item, myFunc.AddParenthesis));
 
                 }
 
-                return $"({string.Format(myFunc.Format, results.ToArray())})";
+                string format = $"{string.Format(myFunc.Format, results.ToArray())}";
+                return addParenthesis ? $"({format})" : format;
 
                 //} else
                 //{
@@ -138,6 +148,8 @@ namespace NetCrud.Rest.Core
         public string Name { get; set; }
         public string Format { get; set; }
         public int Args { get; set; }
+
+        public bool AddParenthesis { get; set; } = true;
     }
 
 }
