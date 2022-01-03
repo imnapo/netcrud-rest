@@ -8,14 +8,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using NetCrud.Rest.Core;
 
 namespace NetCrud.Rest.Example.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController : CrudControllerBase<User, int, UserParameters>
+    public class UsersController : CrudControllerBase<User>
     {
-        public UsersController(IRepository<User> repository, IUnitOfWork unitOfWork, IMapper mapper) : base(repository, unitOfWork)
+        public UsersController(EntityService<User, int> service) : base(service)
         {
         }
     }

@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using NetCrud.Rest.Core;
-using NetCrud.Rest.Data;
-using NetCrud.Rest.Filters;
 using NetCrud.Rest.Models;
 using System;
 using System.Collections.Generic;
@@ -16,13 +14,11 @@ namespace NetCrud.Rest.Controllers
     [ApiController]
     public abstract class CrudControllerBase<TEntity, TId, TParams> : ControllerBase where TEntity : EntityBase<TId> where TParams : GetAllQueryStringParameters<TEntity>
     {
-        protected readonly IRepository<TEntity> repository;
-        protected readonly IUnitOfWork unitOfWork;
+        private readonly IEntityService<TEntity, TId> service;
 
-        public CrudControllerBase(IRepository<TEntity> repository, IUnitOfWork unitOfWork)
+        public CrudControllerBase(IEntityService<TEntity, TId> service)
         {
-            this.repository = repository;
-            this.unitOfWork = unitOfWork;
+            this.service = service;
         }
 
         [HttpGet]
@@ -30,12 +26,12 @@ namespace NetCrud.Rest.Controllers
         {
             if (!request.Paged)
             {
-                var entities = await repository.FindAsync(q => request.ApplyFilter(q), q => request.ApplySort(q), request.GetIncludes());
+                var entities = await service.GetAll(request);
                 return Ok(entities);
             }
             else
             {
-                var entities = await repository.FindPagedAsync(q => request.ApplyFilter(q), q => request.ApplySort(q), request.PageNumber - 1, request.PageSize, false, request.GetIncludes());
+                var entities = await service.GetAllPaged(request);
 
                 Pageable pageable = new Pageable();
                 pageable.LoadPagedList(entities);
@@ -53,7 +49,7 @@ namespace NetCrud.Rest.Controllers
         
         public virtual async Task<IActionResult> GetAsync([FromRoute] TId id, [FromQuery] GetQueryStringParameters parameters)
         {
-            var entity = await repository.FindByIdAsync(id, false, parameters.GetIncludes());
+            var entity = await service.Get(id, false, parameters.GetIncludes());
 
             if (entity == null)
                 return NotFound();
@@ -62,43 +58,36 @@ namespace NetCrud.Rest.Controllers
         }
 
         [HttpPost]
-        [ServiceFilter(typeof(CreateResourceActionFilter))]
         public virtual async Task<IActionResult> CreateAsync(TEntity entity)
-        {        
-            await repository.AddAsync(entity);
-            await unitOfWork.CommitAsync();
+        {
+            await service.Create(entity);
             return Ok(entity);
         }
 
         [HttpPut("{id}")]
-        [ServiceFilter(typeof(UpdateResourceActionFilter))]
         public virtual async Task<IActionResult> UpdateAsync([FromRoute] TId id, [FromBody] TEntity request)
         {
             if (!request.Id.Equals(id))
                 return BadRequest();
-
-            repository.Update(request);
-            await unitOfWork.CommitAsync();
-
-            return Ok(request);
+            var updatedEntity = await service.Update(request);
+            return Ok(updatedEntity);
         }
 
         [HttpPatch("{id}")]
-        //[ServiceFilter(typeof(UpdateResourceActionFilter))]
         public virtual async Task<IActionResult> PatchAsync([FromRoute] TId id, [FromBody] JsonPatchDocument<TEntity> request)
         {
             if (request != null)
             {
-                var entity = await repository.FindByIdAsync(id, forUpdate: true);
+                var entity = await service.Get(id, true);
                 request.ApplyTo(entity, ModelState);
-                repository.Update(entity, false);
-                
+
                 if (!ModelState.IsValid)
                 {
                     return BadRequest(ModelState);
                 }
-  
-                await unitOfWork.CommitAsync();
+
+                await service.Update(entity);
+
 
                 return Ok(entity);
 
@@ -113,13 +102,9 @@ namespace NetCrud.Rest.Controllers
         [HttpDelete("{id}")]
         public virtual async Task<IActionResult> DeleteAsync([FromRoute] TId id)
         {
-            var entity = await repository.FindByIdAsync(id);
-
+            var entity = await service.Delete(id);
             if (entity == null)
                 return NotFound();
-
-            repository.Delete(entity);
-            await unitOfWork.CommitAsync();
             return NoContent();
         }
     }
@@ -127,7 +112,7 @@ namespace NetCrud.Rest.Controllers
     [ApiController]
     public abstract class CrudControllerBase<TEntity> : CrudControllerBase<TEntity, int, GetAllQueryStringParameters<TEntity>> where TEntity : EntityBase<int>
     {
-        protected CrudControllerBase(IRepository<TEntity> repository, IUnitOfWork unitOfWork) : base(repository, unitOfWork)
+        protected CrudControllerBase(IEntityService<TEntity,int> service) : base(service)
         {
         }
     }

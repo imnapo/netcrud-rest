@@ -18,7 +18,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using NetCrud.Rest.Filters;
 using NetCrud.Rest.Example.Definations;
 using NetCrud.Rest.Core;
 
@@ -66,9 +65,7 @@ namespace NetCrud.Rest.Example
             services.AddScoped<IUnitOfWork, UnitOfWork<CrubDbContext>>();
 
             services.AddHttpContextAccessor();
-            services.AddScoped<CreateResourceActionFilter>();
-            services.AddScoped<UpdateResourceActionFilter>();
-            services.AddScoped<IResourceActions<User>, UserActions>();
+            services.AddScoped<IEntityService<User, int>, UserService>();
             services.AddSingleton(provider => new MapperConfiguration(cfg =>
             {
                 cfg.AddProfile(new MapperProfile());

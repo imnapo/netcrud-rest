@@ -189,6 +189,11 @@ namespace NetCrud.Rest.Data
             }
         }
 
+        private void detachAll()
+        {
+
+        }
+
         private void setUnchangeOld(object entity)
         {
             var mems = _context.Entry(entity).Members.ToList();
