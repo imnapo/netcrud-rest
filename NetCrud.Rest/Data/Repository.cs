@@ -140,14 +140,15 @@ namespace NetCrud.Rest.Data
             return q;
         }
 
-        public async Task AddAsync(TEntity entity)
+        public async Task AddAsync(TEntity entity, bool atomic = false)
         {
-            foreach (var dbEntityEntry in _context.ChangeTracker.Entries())
-            {
-                _context.Entry(dbEntityEntry.Entity).State = EntityState.Detached;
-            }
+            if (atomic)
+                foreach (var dbEntityEntry in _context.ChangeTracker.Entries())
+                {
+                    _context.Entry(dbEntityEntry.Entity).State = EntityState.Detached;
+                }
             await _table.AddAsync(entity);
-            setUnchange(entity);
+            if (atomic) setUnchange(entity);
         }
 
         private void setUnchange(object entity)
@@ -174,16 +175,16 @@ namespace NetCrud.Rest.Data
                     if (value is ValueType)
                     {
                         object obj = Activator.CreateInstance(value.GetType());
-                        if(!obj.Equals(value))
+                        if (!obj.Equals(value))
                         {
                             _context.Entry(item.Entity).State = EntityState.Unchanged;
                         }
                     }
-                    else if(value != null)
+                    else if (value != null)
                     {
                         _context.Entry(item.Entity).State = EntityState.Unchanged;
                     }
-                    
+
                 }
 
             }

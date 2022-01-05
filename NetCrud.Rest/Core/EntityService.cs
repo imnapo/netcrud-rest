@@ -31,7 +31,7 @@ namespace NetCrud.Rest.Core
         {
             entity = await this.BeforeWrite(entity, ServiceActionType.Create);
 
-            await repository.AddAsync(entity);
+            await repository.AddAsync(entity, true);
             await unitOfWork.CommitAsync();
 
             entity = await this.AfterWrite(entity, ServiceActionType.Create);

@@ -15,7 +15,7 @@ namespace NetCrud.Rest.Data
 
         Task<TEntity> FindByIdAsync(object id, bool forUpdate = false, params string[] navigationProperties);
         TEntity FindById(object id, params string[] navigationProperties);
-        Task AddAsync(TEntity model);
+        Task AddAsync(TEntity model, bool atomic = false);
         void Update(TEntity model, bool attach = true);
         void Delete(TEntity model);
         Task<IList<TEntity>> FindAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, params string[] navigationProperties);
