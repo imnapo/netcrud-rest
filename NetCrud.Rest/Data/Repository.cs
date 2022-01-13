@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using NetCrud.Rest.Core;
@@ -21,119 +22,27 @@ namespace NetCrud.Rest.Data
             _table = _context.Set<TEntity>();
         }
 
-        public TEntity FindById(object id, params string[] navigationProperties)
+        #region Private Methods
+
+        private IQueryable<TEntity> include(IQueryable<TEntity> query, string[] navigationProperties)
         {
-            var q = _table.Find(id);
-            if (q != null && navigationProperties != null)
+            if (navigationProperties != null)
                 foreach (string tb in navigationProperties)
-                {
-                    var relations = getLoadRelations(tb);
-                    foreach (var tbItem in relations)
-                    {
-                        bool parentIsCollection = false;
-                        object entity = q;
-                        var properties = tbItem.Split(".");
-
-                        foreach (var property in properties)
-                        {
-                            if (entity == null) break;
-
-                            if (parentIsCollection)
-                            {
-                                var v = (IEnumerable)entity;
-                                foreach (var item in v)
-                                {
-                                    _context.Entry(item).Navigation(property).Load();
-                                }
-                                break;
-                            }
-                            else
-                            {
-                                _context.Entry(entity).Navigation(property).LoadAsync();
-                            }
-
-                            Type typeParameterType = entity.GetType().GetProperty(property).PropertyType;
-
-                            if (typeParameterType.IsGenericType && ((typeParameterType.GetGenericTypeDefinition()
-                                == typeof(HashSet<>)) || (typeParameterType.GetGenericTypeDefinition()
-                                == typeof(ICollection<>)) || (typeParameterType.GetGenericTypeDefinition()
-                                == typeof(IList<>))))
-                            {
-                                parentIsCollection = true;
-                            }
-                            else parentIsCollection = false;
-
-                            entity = entity.GetType().GetProperty(property).GetValue(entity);
-                        }
-                    }
-                }
-
-            return q;
+                    foreach (var item in getLoadRelations(tb))
+                        query = query.Include(item);
+            return query;
         }
 
-        public async Task<TEntity> FindByIdAsync(object id, bool forUpdate = false, params string[] navigationProperties)
+        private Expression<Func<TEntity, bool>> GetFindByIdExpression(object id)
         {
-            var q = await _table.FindAsync(id);
-            if (forUpdate)
-            {
-                navigationProperties = GetAllInclues(q);
-            }
-
-            if (q != null && navigationProperties != null)
-                foreach (string tb in navigationProperties)
-                {
-                    var relations = getLoadRelations(tb);
-                    foreach (var tbItem in relations)
-                    {
-                        bool parentIsCollection = false;
-                        object entity = q;
-                        var properties = tbItem.Split(".");
-                        foreach (var property in properties)
-                        {
-                            if (entity == null) break;
-
-                            if (parentIsCollection)
-                            {
-                                var v = (IEnumerable)entity;
-                                foreach (var item in v)
-                                {
-                                    await _context.Entry(item).Navigation(property).LoadAsync();
-                                }
-                                break;
-                            }
-                            else
-                            {
-                                await _context.Entry(entity).Navigation(property).LoadAsync();
-                            }
-
-                            Type typeParameterType = entity.GetType().GetProperty(property).PropertyType;
-
-                            if (typeParameterType.IsGenericType && ((typeParameterType.GetGenericTypeDefinition()
-                                == typeof(HashSet<>)) || (typeParameterType.GetGenericTypeDefinition()
-                                == typeof(ICollection<>)) || (typeParameterType.GetGenericTypeDefinition()
-                                == typeof(IList<>))))
-                            {
-                                parentIsCollection = true;
-                            }
-                            else parentIsCollection = false;
-
-                            entity = entity.GetType().GetProperty(property).GetValue(entity);
-                        }
-                    }
-                }
-
-            return q;
-        }
-
-        public async Task AddAsync(TEntity entity, bool atomic = false)
-        {
-            if (atomic)
-                foreach (var dbEntityEntry in _context.ChangeTracker.Entries())
-                {
-                    _context.Entry(dbEntityEntry.Entity).State = EntityState.Detached;
-                }
-            await _table.AddAsync(entity);
-            if (atomic) setUnchangeForAtomic(entity);
+            var propertyName = "Id";
+            var parameter = Expression.Parameter(typeof(TEntity), "e");
+            var predicate = Expression.Lambda<Func<TEntity, bool>>(
+                Expression.Equal(
+                    Expression.PropertyOrField(parameter, propertyName),
+                    Expression.Constant(id)),
+                parameter);
+            return predicate;
         }
 
         private void setUnchangeForAtomic(object entity)
@@ -154,7 +63,7 @@ namespace NetCrud.Rest.Data
             foreach (var item in modifiedEntities)
             {
 
-                if (IsInheritFromEntityBase(item.Entity))
+                if (IsInheritFromEntityBase(item.Entity.GetType()))
                 {
                     object value = item.Entity.GetType().GetProperty("Id")?.GetValue(item.Entity);
                     if (value is ValueType)
@@ -174,7 +83,6 @@ namespace NetCrud.Rest.Data
 
             }
         }
-
 
         private void setUnchangeDeprached(object entity)
         {
@@ -220,44 +128,71 @@ namespace NetCrud.Rest.Data
 
             }
         }
-        private bool IsInheritFromEntityBase(object entity)
+        private bool IsInheritFromEntityBase(Type type)
         {
-            var type2 = entity.GetType();
-            while (type2 != null)
+            while (type != null)
             {
-                if (type2.IsGenericType && type2.GetGenericTypeDefinition() == typeof(EntityBase<>))
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(EntityBase<>))
                 {
                     return true;
                     //var inType = type2.GetGenericArguments()[0];
                 }
-                type2 = type2.BaseType;
+                type = type.BaseType;
             }
             return false;
         }
 
-        private string[] getLoadRelations(string propName)
-        {
-            if (propName.Contains(".")) return new string[] { propName };
-            Type typeParameterType = typeof(TEntity);
-            var property = typeParameterType.GetProperty(propName);
-            if (property != null)
-            {
-                var attrs = property.GetCustomAttributes(false).ToDictionary(a => a.GetType().Name, a => a);
-                if (attrs.ContainsKey(typeof(LoadRelationAttribute).Name))
-                {
-                    var attr = attrs["LoadRelationAttribute"] as LoadRelationAttribute;
-                    return attr.Includes;
-                }
-                else return new string[] { propName };
-            }
-            else return new string[] { };
+        private string[] getLoadRelations(string propName) => this.getLoadRelations(typeof(TEntity), propName);
 
+        private string[] getLoadRelations(Type parameterType, string propName)
+        {
+            //if (propName.Contains(".")) return new string[] { propName };
+            List<string> lstRelations = new List<string>();
+
+            string[] propNames = propName.Split('.');
+            bool isFirst = true;
+            Type tp = parameterType;
+            foreach (var p in propNames)
+            {
+                var property = tp.GetProperty(p);
+                if (property != null)
+                {
+
+                    tp = property.PropertyType;
+
+                    if (tp.IsGenericType && (
+                    tp.GetGenericTypeDefinition() == typeof(ICollection<>) ||
+                    tp.GetGenericTypeDefinition() == typeof(IList<>) ||
+                    tp.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+                      ))
+                    {
+                        tp = tp.GetGenericArguments()[0];
+                    }
+
+                    var attrs = property.GetCustomAttributes(false).ToDictionary(a => a.GetType().Name, a => a);
+                    if (attrs.ContainsKey(typeof(LoadRelationAttribute).Name))
+                    {
+                        var attr = attrs[typeof(LoadRelationAttribute).Name] as LoadRelationAttribute;
+
+                        if (isFirst) lstRelations.AddRange(attr.Includes);
+                        else lstRelations = lstRelations.SelectMany(x => attr.Includes.Select(a => $"{x}.{a}")).ToList();
+                    }
+                    else
+                    {
+                        if (isFirst) lstRelations.Add(p);
+                        else lstRelations = lstRelations.Select(x => $"{x}.{p}").ToList();
+                    }
+                }
+                else break;
+                isFirst = false;
+            }
+
+            return lstRelations.ToArray();
         }
 
-        private string[] GetAllInclues(object entity)
+        private string[] GetAllInclues(Type typeParameterType)
         {
             List<string> inclues = new List<string>();
-            Type typeParameterType = entity.GetType();
             var props = typeParameterType.GetProperties();
             foreach (var p in props)
             {
@@ -265,7 +200,7 @@ namespace NetCrud.Rest.Data
                 if (attrs.ContainsKey("NotMappedAttribute"))
                     continue;
                 var type = p.PropertyType;
-                if (type.IsClass && typeof(EntityBase).IsAssignableFrom(type))
+                if (type.IsClass && IsInheritFromEntityBase(type))
                 {
                     inclues.Add(p.Name);
                 }
@@ -273,13 +208,49 @@ namespace NetCrud.Rest.Data
                     type.GetGenericTypeDefinition() == typeof(ICollection<>) ||
                     type.GetGenericTypeDefinition() == typeof(IList<>) ||
                     type.GetGenericTypeDefinition() == typeof(IEnumerable<>)
-                      ) && typeof(EntityBase).IsAssignableFrom(type.GetGenericArguments()[0]))
+                      ) && IsInheritFromEntityBase(type.GetGenericArguments()[0]))
                 {
                     inclues.Add(p.Name);
                 }
 
             }
             return inclues.ToArray();
+        }
+
+        #endregion
+
+
+        public TEntity FindById(object id, bool includeAll = false, params string[] navigationProperties)
+        {
+            if (includeAll)
+            {
+                navigationProperties = GetAllInclues(typeof(TEntity));
+            }
+            var query = _table.AsQueryable();
+            query = this.include(query, navigationProperties);
+            return query.FirstOrDefault(GetFindByIdExpression(id));
+        }
+
+        public async Task<TEntity> FindByIdAsync(object id, bool includeAll = false, params string[] navigationProperties)
+        {
+            if (includeAll)
+            {
+                navigationProperties = GetAllInclues(typeof(TEntity));
+            }
+            var query = _table.AsQueryable();
+            query = this.include(query, navigationProperties);
+            return await query.FirstOrDefaultAsync(GetFindByIdExpression(id));
+        }
+
+        public async Task AddAsync(TEntity entity, bool atomic = false)
+        {
+            if (atomic)
+                foreach (var dbEntityEntry in _context.ChangeTracker.Entries())
+                {
+                    _context.Entry(dbEntityEntry.Entity).State = EntityState.Detached;
+                }
+            await _table.AddAsync(entity);
+            if (atomic) setUnchangeForAtomic(entity);
         }
 
         public void Delete(TEntity entity)

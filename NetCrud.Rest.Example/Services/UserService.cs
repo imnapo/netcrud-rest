@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace NetCrud.Rest.Example.Definations
 {
-    public class UserService : EntityService<User>
+    public class UserService : EntityService<User, int>
     {
         public UserService(IRepository<User> repository, IUnitOfWork unitOfWork)
         : base(repository, unitOfWork)

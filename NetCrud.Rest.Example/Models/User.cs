@@ -1,5 +1,6 @@
 ﻿using Bogus;
 using Microsoft.EntityFrameworkCore;
+using NetCrud.Rest.Core;
 using NetCrud.Rest.Models;
 using System;
 using System.Collections.Generic;
@@ -37,6 +38,7 @@ namespace NetCrud.Rest.Example.Models
         public User User { get; set; }
 
         public Game Game { get; set; }
+
     }
 
 
@@ -69,6 +71,8 @@ namespace NetCrud.Rest.Example.Models
     {
         public static async Task Seed(this CrubDbContext context)
         {
+            if (await context.Users.AnyAsync()) return;
+
             var testUsers = new Faker<User>()
                         .RuleFor(o => o.Email, f => f.Person.Email)
                         .RuleFor(o => o.Name, f => f.Person.FullName)
@@ -78,11 +82,13 @@ namespace NetCrud.Rest.Example.Models
                         .RuleFor(c => c.ModifiedAt, f => f.Date.Past());
 
 
-            
 
-            context.UserGames.RemoveRange(context.UserGames);
-            context.Users.RemoveRange(context.Users);
-            context.Addresses.RemoveRange(context.Addresses);
+
+            //context.UserGames.RemoveRange(context.UserGames);
+            //context.Users.RemoveRange(context.Users);
+            //context.Addresses.RemoveRange(context.Addresses);
+
+           
 
             var users = testUsers.Generate(100).ToList();
             await context.Users.AddRangeAsync(users);

@@ -11,8 +11,8 @@ namespace NetCrud.Rest.Data
 {
     public interface IRepository<TEntity> : IDisposable where TEntity : class
     {
-        Task<TEntity> FindByIdAsync(object id, bool forUpdate = false, params string[] navigationProperties);
-        TEntity FindById(object id, params string[] navigationProperties);
+        Task<TEntity> FindByIdAsync(object id, bool includeAll = false, params string[] navigationProperties);
+        TEntity FindById(object id, bool includeAll = false, params string[] navigationProperties);
         Task AddAsync(TEntity model, bool atomic = false);
         void Update(TEntity model, bool attach = true);
         void Delete(TEntity model);
