@@ -11,8 +11,6 @@ namespace NetCrud.Rest.Data
 {
     public interface IRepository<TEntity> : IDisposable where TEntity : class
     {
-        Task<IList<TEntity>> FindAllAsync(params string[] navigationProperties);
-
         Task<TEntity> FindByIdAsync(object id, bool forUpdate = false, params string[] navigationProperties);
         TEntity FindById(object id, params string[] navigationProperties);
         Task AddAsync(TEntity model, bool atomic = false);
@@ -20,7 +18,7 @@ namespace NetCrud.Rest.Data
         void Delete(TEntity model);
         Task<IList<TEntity>> FindAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, params string[] navigationProperties);
 
-        Task<IList<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, params string[] navigationProperties);
+        Task<IList<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate = null, params string[] navigationProperties);
 
         IList<TEntity> Find(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, params string[] navigationProperties);
 

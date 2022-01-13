@@ -20,21 +20,6 @@ namespace NetCrud.Rest.Data
             _context = Context;
             _table = _context.Set<TEntity>();
         }
-        public async Task<IList<TEntity>> FindAllAsync(params string[] navigationProperties)
-        {
-            var q = _table.AsQueryable();
-
-
-
-            if (navigationProperties != null)
-                foreach (string tb in navigationProperties)
-                    foreach (var item in getLoadRelations(tb))
-                        q = q.Include(item);
-
-
-
-            return await q.ToListAsync();
-        }
 
         public TEntity FindById(object id, params string[] navigationProperties)
         {
@@ -148,10 +133,10 @@ namespace NetCrud.Rest.Data
                     _context.Entry(dbEntityEntry.Entity).State = EntityState.Detached;
                 }
             await _table.AddAsync(entity);
-            if (atomic) setUnchange(entity);
+            if (atomic) setUnchangeForAtomic(entity);
         }
 
-        private void setUnchange(object entity)
+        private void setUnchangeForAtomic(object entity)
         {
             var modifiedEntities = _context.ChangeTracker.Entries()
             .Where(p => p.State == EntityState.Modified).ToList();
@@ -190,12 +175,8 @@ namespace NetCrud.Rest.Data
             }
         }
 
-        private void detachAll()
-        {
 
-        }
-
-        private void setUnchangeOld(object entity)
+        private void setUnchangeDeprached(object entity)
         {
             var mems = _context.Entry(entity).Members.ToList();
 
@@ -214,7 +195,7 @@ namespace NetCrud.Rest.Data
                     {
                         _context.Entry(p.GetValue(entity)).State = EntityState.Unchanged;
                     }
-                    setUnchange(p.GetValue(entity));
+                    setUnchangeForAtomic(p.GetValue(entity));
                 }
                 else if (type.IsGenericType && (
                     type.GetGenericTypeDefinition() == typeof(ICollection<>) ||
@@ -232,7 +213,7 @@ namespace NetCrud.Rest.Data
                             var model = value as EntityBase;
                             if (model != null && model.Id > 0)
                                 _context.Entry(model).State = EntityState.Unchanged;
-                            setUnchange(value);
+                            setUnchangeForAtomic(value);
                         }
                     }
                 }
@@ -333,7 +314,7 @@ namespace NetCrud.Rest.Data
             return query.ToList();
         }
 
-        public async Task<IList<TEntity>> FindAsync(System.Linq.Expressions.Expression<Func<TEntity, bool>> predicate, params string[] navigationProperties)
+        public async Task<IList<TEntity>> FindAsync(System.Linq.Expressions.Expression<Func<TEntity, bool>> predicate = null, params string[] navigationProperties)
         {
             var q = _table.AsQueryable();
             if (navigationProperties != null)
@@ -341,7 +322,7 @@ namespace NetCrud.Rest.Data
                     foreach (var item in getLoadRelations(tb))
                         q = q.Include(item);
 
-            var result = q.Where(predicate);
+            var result = predicate != null ? q.Where(predicate) : q;
             return await result.ToListAsync();
         }
 
@@ -374,7 +355,7 @@ namespace NetCrud.Rest.Data
 
         public void Update(TEntity model, bool attach = true)
         {
-            setUnchange(model);
+            setUnchangeForAtomic(model);
             if (attach)
                 _table.Update(model);
 

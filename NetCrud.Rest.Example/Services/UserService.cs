@@ -19,6 +19,7 @@ namespace NetCrud.Rest.Example.Definations
 
         public override Task<User> BeforeWrite(User entity, ServiceActionType actionType)
         {
+            
             entity.CreatedAt = DateTime.UtcNow;
             entity.ModifiedAt = DateTime.UtcNow;
             return base.BeforeWrite(entity, actionType);

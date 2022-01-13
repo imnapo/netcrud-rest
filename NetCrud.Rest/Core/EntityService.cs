@@ -9,8 +9,8 @@ namespace NetCrud.Rest.Core
 {
     public class EntityService<TEntity, TId> : IEntityService<TEntity, TId> where TEntity : EntityBase<TId>
     {
-        private readonly IRepository<TEntity> repository;
-        private readonly IUnitOfWork unitOfWork;
+        protected readonly IRepository<TEntity> repository;
+        protected readonly IUnitOfWork unitOfWork;
 
         public EntityService(IRepository<TEntity> repository, IUnitOfWork unitOfWork)
         {
