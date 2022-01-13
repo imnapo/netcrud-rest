@@ -21,6 +21,7 @@ namespace NetCrud.Rest.Example.Models
         [ForeignKey("Address")]
         public int? AddressId { get; set; }
 
+        [EagerLoad]
         public Address Address { get; set; }
 
         public ICollection<UserGame> UserGames { get; set; }

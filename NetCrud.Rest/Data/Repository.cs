@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -24,12 +25,33 @@ namespace NetCrud.Rest.Data
 
         #region Private Methods
 
+        private string[] addEagerLoads(string[] navigationProps, Type type)
+        {
+            List<string> includes = new List<string>(navigationProps);
+            var props = type.GetProperties();
+            foreach (var p in props)
+            {
+                var attrs = p.GetCustomAttributes(false).ToDictionary(a => a.GetType().Name, a => a);
+                if (attrs.ContainsKey(typeof(EagerLoadAttribute).Name))
+                {
+                    includes.Add(p.Name);
+                }
+            }
+            return includes.ToArray();
+        }
+
         private IQueryable<TEntity> include(IQueryable<TEntity> query, string[] navigationProperties)
         {
+            List<string> includes = new List<string>();
+
             if (navigationProperties != null)
                 foreach (string tb in navigationProperties)
-                    foreach (var item in getLoadRelations(tb))
-                        query = query.Include(item);
+                    includes.AddRange(getLoadRelations(tb));
+            includes = new List<string>(addEagerLoads(includes.ToArray(), typeof(TEntity)));
+            includes.Distinct().ToList().ForEach(x =>
+            {
+                query = query.Include(x);
+            });
             return query;
         }
 
@@ -197,7 +219,7 @@ namespace NetCrud.Rest.Data
             foreach (var p in props)
             {
                 var attrs = p.GetCustomAttributes(false).ToDictionary(a => a.GetType().Name, a => a);
-                if (attrs.ContainsKey("NotMappedAttribute"))
+                if (attrs.ContainsKey(typeof(NotMappedAttribute).Name))
                     continue;
                 var type = p.PropertyType;
                 if (type.IsClass && IsInheritFromEntityBase(type))
@@ -226,8 +248,10 @@ namespace NetCrud.Rest.Data
             {
                 navigationProperties = GetAllInclues(typeof(TEntity));
             }
+
             var query = _table.AsQueryable();
-            query = this.include(query, navigationProperties);
+            query = this.include(query, navigationProperties.Distinct().ToArray());
+
             return query.FirstOrDefault(GetFindByIdExpression(id));
         }
 
@@ -237,8 +261,10 @@ namespace NetCrud.Rest.Data
             {
                 navigationProperties = GetAllInclues(typeof(TEntity));
             }
+
             var query = _table.AsQueryable();
             query = this.include(query, navigationProperties);
+
             return await query.FirstOrDefaultAsync(GetFindByIdExpression(id));
         }
 
@@ -261,10 +287,7 @@ namespace NetCrud.Rest.Data
         public async Task<IList<TEntity>> FindAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, params string[] navigationProperties)
         {
             var query = _table.AsQueryable();
-            if (navigationProperties != null)
-                foreach (string tb in navigationProperties)
-                    foreach (var item in getLoadRelations(tb))
-                        query = query.Include(item);
+            query = this.include(query, navigationProperties);
 
             query = func != null ? func(query) : query;
             query = sort != null ? sort(query) : query;
@@ -274,10 +297,7 @@ namespace NetCrud.Rest.Data
         public IList<TEntity> Find(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, params string[] navigationProperties)
         {
             var query = _table.AsQueryable();
-            if (navigationProperties != null)
-                foreach (string tb in navigationProperties)
-                    foreach (var item in getLoadRelations(tb))
-                        query = query.Include(item);
+            query = this.include(query, navigationProperties);
 
             query = func != null ? func(query) : query;
             query = sort != null ? sort(query) : query;
@@ -287,25 +307,19 @@ namespace NetCrud.Rest.Data
 
         public async Task<IList<TEntity>> FindAsync(System.Linq.Expressions.Expression<Func<TEntity, bool>> predicate = null, params string[] navigationProperties)
         {
-            var q = _table.AsQueryable();
-            if (navigationProperties != null)
-                foreach (string tb in navigationProperties)
-                    foreach (var item in getLoadRelations(tb))
-                        q = q.Include(item);
+            var query = _table.AsQueryable();
+            query = this.include(query, navigationProperties);
 
-            var result = predicate != null ? q.Where(predicate) : q;
+            var result = predicate != null ? query.Where(predicate) : query;
             return await result.ToListAsync();
         }
 
         public IList<TEntity> Find(System.Linq.Expressions.Expression<Func<TEntity, bool>> predicate, params string[] navigationProperties)
         {
-            var q = _table.AsQueryable();
-            if (navigationProperties != null)
-                foreach (string tb in navigationProperties)
-                    foreach (var item in getLoadRelations(tb))
-                        q = q.Include(item);
+            var query = _table.AsQueryable();
+            query = this.include(query, navigationProperties);
 
-            var result = q.Where(predicate);
+            var result = query.Where(predicate);
             return result.ToList();
         }
 
@@ -335,10 +349,7 @@ namespace NetCrud.Rest.Data
         public async Task<IPagedList<TEntity>> FindPagedAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, int pageIndex = 0, int pageSize = int.MaxValue, bool getOnlyTotalCount = false, params string[] navigationProperties)
         {
             var query = _table.AsQueryable();
-            if (navigationProperties != null)
-                foreach (string tb in navigationProperties)
-                    foreach (var item in getLoadRelations(tb))
-                        query = query.Include(item);
+            query = this.include(query, navigationProperties);
 
             query = func != null ? func(query) : query;
             query = sort != null ? sort(query) : query;
@@ -349,10 +360,7 @@ namespace NetCrud.Rest.Data
         public async Task<IPagedList<TEntity>> FindPagedAsync(System.Linq.Expressions.Expression<Func<TEntity, bool>> predicate, int pageIndex = 0, int pageSize = int.MaxValue, bool getOnlyTotalCount = false, params string[] navigationProperties)
         {
             var query = _table.AsQueryable();
-            if (navigationProperties != null)
-                foreach (string tb in navigationProperties)
-                    foreach (var item in getLoadRelations(tb))
-                        query = query.Include(item);
+            query = this.include(query, navigationProperties);
 
             query = query.Where(predicate);
 
