@@ -239,6 +239,8 @@ namespace NetCrud.Rest.Data
             return inclues.ToArray();
         }
 
+
+
         #endregion
 
 
@@ -282,6 +284,8 @@ namespace NetCrud.Rest.Data
         public void Delete(TEntity entity)
         {
             _table.Remove(entity);
+
+
         }
 
         public async Task<IList<TEntity>> FindAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, params string[] navigationProperties)
@@ -365,6 +369,13 @@ namespace NetCrud.Rest.Data
             query = query.Where(predicate);
 
             return await query.ToPagedListAsync(pageIndex, pageSize, getOnlyTotalCount);
+        }
+
+        public void Detach(object model)
+        {
+            var entry = _context.Entry(model);
+            if (entry != null)
+                entry.State = EntityState.Detached;
         }
     }
 

@@ -16,6 +16,7 @@ namespace NetCrud.Rest.Data
         Task AddAsync(TEntity model, bool atomic = false);
         void Update(TEntity model, bool attach = true);
         void Delete(TEntity model);
+        void Detach(object model);
         Task<IList<TEntity>> FindAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, params string[] navigationProperties);
 
         Task<IList<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate = null, params string[] navigationProperties);
