@@ -15,10 +15,12 @@ namespace NetCrud.Rest.Core
         }, new QueryFunction {
         Name = "and",
         Args = 2,
+        PassToAllArgs = true,
         Format = "{0} && {1}"
         }, new QueryFunction {
         Name = "or",
         Args = 2,
+        PassToAllArgs = true,
         Format = "{0} || {1}"
         }, new QueryFunction {
         Name = "lessThan",
@@ -58,16 +60,20 @@ namespace NetCrud.Rest.Core
         Format = "{0}.Any()"
         }, new QueryFunction {
         Name = "any",
+        NeedsNav = 1,
         Args = 2,
         AddParenthesis = false,
-        Format = "{0}.Any(x=>x.{1})"
+        Format = "{0}.Any(=>{1})"
         }
         };
 
-        public static string DeserializeFilter(string queries, bool addParenthesis = true)
+        static char[] alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToLower().ToCharArray();
+        //int lastCharIndex = 0;
+
+        public static string DeserializeFilter(string queries, bool addParenthesis = true,bool addPrefix = false, int charIndex = -1)
         {
             int ptStartIndex = queries.IndexOf('(');
-            if (ptStartIndex < 0) return queries.UppercaseFirst();
+            if (ptStartIndex < 0) return (addPrefix ? $"{alpha[charIndex]}." : "") + queries.UppercaseFirst();
             if (ptStartIndex >= 1)
             {
                 string funct = queries.Substring(0, ptStartIndex);
@@ -109,13 +115,22 @@ namespace NetCrud.Rest.Core
                 args.Add(arg2);
 
                 List<string> results = new List<string>();
+                int counter = 0;
                 foreach (var item in args)
                 {
-                    results.Add(DeserializeFilter(item, myFunc.AddParenthesis));
-
+                    bool needsNav = myFunc.NeedsNav.HasValue && myFunc.NeedsNav.Value == counter;
+                    int nextCharIndex = charIndex;
+                    if (needsNav)
+                        nextCharIndex++;
+                    if (addPrefix && (myFunc.PassToAllArgs || counter == 0))
+                        needsNav = true;
+                    
+                   
+                    results.Add(DeserializeFilter(item, myFunc.AddParenthesis, needsNav, needsNav ? nextCharIndex : charIndex));
+                    counter++;
                 }
 
-                string format = $"{string.Format(myFunc.Format, results.ToArray())}";
+                string format = $"{string.Format(myFunc.Format.Replace("=>", alpha[charIndex + 1] + "=>"), results.ToArray())}";
                 return addParenthesis ? $"({format})" : format;
 
                 //} else
@@ -148,6 +163,10 @@ namespace NetCrud.Rest.Core
         public string Name { get; set; }
         public string Format { get; set; }
         public int Args { get; set; }
+
+        public int? NeedsNav { get; set; }
+
+        public bool PassToAllArgs { get; set; }
 
         public bool AddParenthesis { get; set; } = true;
     }
