@@ -267,7 +267,20 @@ namespace NetCrud.Rest.Data
             var query = _table.AsQueryable();
             query = this.include(query, navigationProperties);
 
-            return await query.FirstOrDefaultAsync(GetFindByIdExpression(id));
+            var entity = await query.FirstOrDefaultAsync(GetFindByIdExpression(id));
+            //if (includeAll)
+            //{
+            //    var trackedEntities = _context.ChangeTracker.Entries().ToList();
+
+            //    foreach (var item in trackedEntities)
+            //    {
+            //        var a = item.Entity;
+            //        if (entity != a)
+            //            item.State = EntityState.Detached;
+            //    }
+            //}
+
+            return entity;
         }
 
         public async Task AddAsync(TEntity entity, bool atomic = false)
@@ -376,6 +389,13 @@ namespace NetCrud.Rest.Data
             var entry = _context.Entry(model);
             if (entry != null)
                 entry.State = EntityState.Detached;
+        }
+
+        public async Task ReloadAsync(object model)
+        {
+            var entry = _context.Entry(model);
+            if (entry != null)
+                await entry.ReloadAsync();
         }
     }
 
