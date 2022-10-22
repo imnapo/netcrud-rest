@@ -116,4 +116,12 @@ namespace NetCrud.Rest.Controllers
         {
         }
     }
+
+    [ApiController]
+    public abstract class CrudControllerBase<TEntity, TId> : CrudControllerBase<TEntity, TId, GetAllQueryStringParameters<TEntity>> where TEntity : EntityBase<TId>
+    {
+        protected CrudControllerBase(IEntityService<TEntity, TId> service) : base(service)
+        {
+        }
+    }
 }
