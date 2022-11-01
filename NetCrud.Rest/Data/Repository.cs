@@ -4,11 +4,13 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using NetCrud.Rest.Core;
 using NetCrud.Rest.Data.Extensions;
 using NetCrud.Rest.Models;
+using System.Reflection;
 
 namespace NetCrud.Rest.Data
 {
@@ -53,6 +55,22 @@ namespace NetCrud.Rest.Data
                 query = query.Include(x);
             });
             return query;
+        }
+
+        private Dictionary<string, string> GetAtomicAnys(string[] navigationProperties)
+        {
+            Dictionary<string, string> atomics = new Dictionary<string, string>();
+
+            if (navigationProperties != null)
+                foreach (string tb in navigationProperties)
+                {
+                    var result = getAtomicAnys(typeof(TEntity), tb);
+                    if (result != null)
+
+                        atomics.Add(tb, result);
+                }
+
+            return atomics;
         }
 
         private Expression<Func<TEntity, bool>> GetFindByIdExpression(object id)
@@ -192,7 +210,11 @@ namespace NetCrud.Rest.Data
                     }
 
                     var attrs = property.GetCustomAttributes(false).ToDictionary(a => a.GetType().Name, a => a);
-                    if (attrs.ContainsKey(typeof(LoadRelationAttribute).Name))
+                    if (attrs.ContainsKey(typeof(AtomicAnyAttribute).Name))
+                    {
+                        break;
+                    }
+                    else if (attrs.ContainsKey(typeof(LoadRelationAttribute).Name))
                     {
                         var attr = attrs[typeof(LoadRelationAttribute).Name] as LoadRelationAttribute;
 
@@ -210,6 +232,30 @@ namespace NetCrud.Rest.Data
             }
 
             return lstRelations.ToArray();
+        }
+
+        private string getAtomicAnys(Type parameterType, string propName)
+        {
+            if (propName.Contains(".")) return null;
+
+            string[] propNames = propName.Split('.');
+
+            Type tp = parameterType;
+            var property = tp.GetProperty(propName);
+            if (property != null)
+            {
+                var attrs = property.GetCustomAttributes(false).ToDictionary(a => a.GetType().Name, a => a);
+                if (attrs.ContainsKey(typeof(AtomicAnyAttribute).Name))
+                {
+                    var attr = attrs[typeof(AtomicAnyAttribute).Name] as AtomicAnyAttribute;
+
+                    return attr.NavProp;
+                }
+
+            }
+
+
+            return null;
         }
 
         private string[] GetAllInclues(Type typeParameterType)
@@ -239,10 +285,48 @@ namespace NetCrud.Rest.Data
             return inclues.ToArray();
         }
 
+        private object GetPropValue(object src, string propName)
+        {
+            return src.GetType().GetProperty(propName).GetValue(src, null);
+        }
 
+        private void SetPropertyValue(object target, string properyName, object value)
+        {
+            Type type = target.GetType();
+
+            PropertyInfo prop = type.GetProperty(properyName);
+
+            prop.SetValue(target, value, null);
+        }
+
+        private async Task ApplyAtomics<T>(T list, string[] navigations) where T : IList<TEntity>
+        {
+            foreach (var item in list)
+            {
+                await ApplyAtomics(item, navigations);
+            }
+            
+        }
+
+        private async Task ApplyAtomics(TEntity item, string[] navigations)
+        {
+            await ApplyAtomicAnys(item, navigations);
+        }
+
+        private async Task<TEntity> ApplyAtomicAnys(TEntity item, string[] navigations)
+        {
+            var atomics = GetAtomicAnys(navigations);
+            foreach (var atomic in atomics)
+            {
+
+                var rq = _table.AsQueryable();
+                var res = await rq.Where($"x => x.Id == {item.Id} && x.{atomic.Value}.Any()").AnyAsync();
+                SetPropertyValue(item, atomic.Key, res);
+            }
+            return item;
+        }
 
         #endregion
-
 
         public TEntity FindById(object id, bool includeAll = false, params string[] navigationProperties)
         {
@@ -255,6 +339,7 @@ namespace NetCrud.Rest.Data
             query = this.include(query, navigationProperties.Distinct().ToArray());
 
             return query.FirstOrDefault(GetFindByIdExpression(id));
+
         }
 
         public async Task<TEntity> FindByIdAsync(object id, bool includeAll = false, params string[] navigationProperties)
@@ -280,6 +365,7 @@ namespace NetCrud.Rest.Data
             //    }
             //}
 
+            await ApplyAtomics(entity, navigationProperties);
             return entity;
         }
 
@@ -308,7 +394,9 @@ namespace NetCrud.Rest.Data
 
             query = func != null ? func(query) : query;
             query = sort != null ? sort(query) : query;
-            return await query.ToListAsync();
+            var result = await query.ToListAsync();
+            await ApplyAtomics(result, navigationProperties);
+            return result;
         }
 
         public IList<TEntity> Find(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, params string[] navigationProperties)
@@ -328,7 +416,9 @@ namespace NetCrud.Rest.Data
             query = this.include(query, navigationProperties);
 
             var result = predicate != null ? query.Where(predicate) : query;
-            return await result.ToListAsync();
+            var data = await result.ToListAsync();
+            await ApplyAtomics(data, navigationProperties);
+            return data;
         }
 
         public IList<TEntity> Find(System.Linq.Expressions.Expression<Func<TEntity, bool>> predicate, params string[] navigationProperties)
@@ -371,7 +461,9 @@ namespace NetCrud.Rest.Data
             query = func != null ? func(query) : query;
             query = sort != null ? sort(query) : query;
 
-            return await query.ToPagedListAsync(pageIndex, pageSize, getOnlyTotalCount);
+            var result = await query.ToPagedListAsync(pageIndex, pageSize, getOnlyTotalCount);
+            await ApplyAtomics(result, navigationProperties);
+            return result;
         }
 
         public async Task<IPagedList<TEntity>> FindPagedAsync(System.Linq.Expressions.Expression<Func<TEntity, bool>> predicate, int pageIndex = 0, int pageSize = int.MaxValue, bool getOnlyTotalCount = false, params string[] navigationProperties)
@@ -381,7 +473,9 @@ namespace NetCrud.Rest.Data
 
             query = query.Where(predicate);
 
-            return await query.ToPagedListAsync(pageIndex, pageSize, getOnlyTotalCount);
+            var result = await query.ToPagedListAsync(pageIndex, pageSize, getOnlyTotalCount);
+            await ApplyAtomics(result, navigationProperties);
+            return result;
         }
 
         public void Detach(object model)

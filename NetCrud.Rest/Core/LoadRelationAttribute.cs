@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿
+using System.ComponentModel.DataAnnotations.Schema;
+
 
 namespace NetCrud.Rest.Core
 {
     [System.AttributeUsage(System.AttributeTargets.Property)]
-    public class LoadRelationAttribute : Attribute
+    public class LoadRelationAttribute : NotMappedAttribute
     {
         public string[] Includes;
 
@@ -14,4 +14,5 @@ namespace NetCrud.Rest.Core
             Includes = includes;
         }
     }
+
 }
