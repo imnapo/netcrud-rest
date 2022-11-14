@@ -8,8 +8,8 @@ namespace NetCrud.Rest.Core
 {
     public interface IEntityService<TEntity, TId> where TEntity : EntityBase<TId>
     {
-        public Task<TEntity> BeforeWrite(TEntity entity, ServiceActionType actionType);
-        public Task<TEntity> AfterWrite(TEntity entity, ServiceActionType actionType);
+        public Task<IList<TEntity>> Before(IList<TEntity> entities, ServiceActionType actionType);
+        public Task<IList<TEntity>> After(IList<TEntity> entities, ServiceActionType actionType);
 
         public Task<TEntity> Create(TEntity entity);
         public Task<TEntity> Update(TEntity entity);
