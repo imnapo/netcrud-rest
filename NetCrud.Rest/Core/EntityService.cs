@@ -17,24 +17,27 @@ namespace NetCrud.Rest.Core
             this.repository = repository;
             this.unitOfWork = unitOfWork;
         }
-        public virtual Task<IList<TEntity>> After(IList<TEntity> entities, ServiceActionType actionType)
+        public virtual Task After(IList<TEntity> entities, ServiceActionType actionType, object data = null)
         {
-            return Task.FromResult(entities);
+            return Task.CompletedTask;
         }
 
-        public virtual Task<IList<TEntity>> Before(IList<TEntity> entities, ServiceActionType actionType)
+      
+
+        public virtual Task<object> Before(IList<TEntity> entities, ServiceActionType actionType)
         {
-            return Task.FromResult(entities);
+            object obj = null;
+            return Task.FromResult(obj);
         }
 
         public async Task<TEntity> Create(TEntity entity)
         {
-            await this.Before(new List<TEntity> { entity }, ServiceActionType.Create);
+            var data = await this.Before(new List<TEntity> { entity }, ServiceActionType.Create);
             
             await repository.AddAsync(entity, true);
             await unitOfWork.CommitAsync();
 
-            await this.After(new List<TEntity> { entity }, ServiceActionType.Create);
+            await this.After(new List<TEntity> { entity }, ServiceActionType.Create, data);
 
             return entity;
         }
@@ -44,10 +47,10 @@ namespace NetCrud.Rest.Core
             var entity = await repository.FindByIdAsync(id);
             if (entity != null)
             {
-                await this.Before(new List<TEntity> { entity }, ServiceActionType.Delete);
+                var data = await this.Before(new List<TEntity> { entity }, ServiceActionType.Delete);
                 repository.Delete(entity);
                 await unitOfWork.CommitAsync();
-                await this.After(new List<TEntity> { entity }, ServiceActionType.Delete);
+                await this.After(new List<TEntity> { entity }, ServiceActionType.Delete, data);
                 return entity;
             }
             else return null;
@@ -75,12 +78,14 @@ namespace NetCrud.Rest.Core
 
         public async Task<TEntity> Update(TEntity entity)
         {
-            await this.Before(new List<TEntity> { entity }, ServiceActionType.Update);
+            object data = await this.Before(new List<TEntity> { entity }, ServiceActionType.Update);
             repository.Update(entity);
             await unitOfWork.CommitAsync();
-            await this.After(new List<TEntity> { entity }, ServiceActionType.Update);
+            await this.After(new List<TEntity> { entity }, ServiceActionType.Update, data);
             return entity;
         }
+
+       
     }
 
     public class EntityService<TEntity> : EntityService<TEntity, int> where TEntity : EntityBase<int>

@@ -20,6 +20,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using NetCrud.Rest.Example.Definations;
 using NetCrud.Rest.Core;
+using NetCrud.Rest.EntityFramework;
 
 namespace NetCrud.Rest.Example
 {

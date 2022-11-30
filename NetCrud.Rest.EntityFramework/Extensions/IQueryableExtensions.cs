@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Linq.Dynamic.Core;
 
-namespace NetCrud.Rest.Data.Extensions
+namespace NetCrud.Rest.EntityFramework.Extensions
 {
     public static class IQueryableExtensions
     {
