@@ -13,7 +13,7 @@ namespace NetCrud.Rest.Core
         /// </summary>
         /// <typeparam name="T">Type</typeparam>
         /// <param name="pagedList">Entities (models)</param>
-        public virtual void LoadPagedList<T>(IPagedList<T> pagedList)
+        public virtual void LoadPagedList<T>(IPagedList<T> pagedList) where T : class
         {
             FirstItem = (pagedList.CurrentPage * pagedList.PageSize) + 1;
             HasNextPage = pagedList.HasNextPage;

@@ -11,7 +11,7 @@ namespace NetCrud.Rest.EntityFramework.Extensions
 {
     public static class IQueryableExtensions
     {
-        public static async Task<IPagedList<T>> ToPagedListAsync<T>(this IQueryable<T> source, int pageIndex, int pageSize, bool getOnlyTotalCount = false)
+        public static async Task<IPagedList<T>> ToPagedListAsync<T>(this IQueryable<T> source, int pageIndex, int pageSize, bool getOnlyTotalCount = false) where T : class
         {
             if (source == null)
                 return new PagedList<T>(new List<T>(), pageIndex, pageSize);

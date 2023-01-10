@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace NetCrud.Rest.Core
 {
-    public class PagedList<T> : List<T>, IPagedList<T>
+    public class PagedList<T> : List<T>, IPagedList<T> where T : class
     {
         public PagedList(List<T> items, int pageNumber, int pageSize, int? count = null)
         {
@@ -29,5 +29,10 @@ namespace NetCrud.Rest.Core
         public int TotalCount { get; }
 
         public int TotalPages { get; }
+
+        public IPagedList<object> Cast()
+        {
+            return new PagedList<object>(this.Cast<object>().ToList(), CurrentPage, TotalCount);
+        }
     }
 }
