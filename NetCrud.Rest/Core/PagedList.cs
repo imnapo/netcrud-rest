@@ -32,7 +32,7 @@ namespace NetCrud.Rest.Core
 
         public IPagedList<object> Cast()
         {
-            return new PagedList<object>(this.Cast<object>().ToList(), CurrentPage, TotalCount);
+            return new PagedList<object>(this.Cast<object>().ToList(), CurrentPage, PageSize, TotalCount);
         }
     }
 }
