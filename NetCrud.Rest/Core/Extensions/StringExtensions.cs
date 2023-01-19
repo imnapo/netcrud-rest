@@ -19,5 +19,35 @@ namespace NetCrud.Rest.Core.Extensions
    
             return string.Join('.', parts);
         }
+
+        public static string[] GetFields(this string s)
+        {
+            var lst = new List<string>();
+            int openBrackets = 0;
+            int lastIndex = -1;
+            for (int i = 0; i < s.Length; i++)
+            {
+                if(s[i] == ',' && openBrackets == 0 && i != lastIndex)
+                {
+                    string item = s.Substring(lastIndex + 1, i - lastIndex - 1);
+                    if(!string.IsNullOrWhiteSpace(item)) lst.Add(item.Replace(" ",""));
+                    lastIndex = i;
+                }
+                else if(s[i] == '[')
+                {
+                    openBrackets++;
+                }
+                else if (s[i] == ']')
+                {
+                    openBrackets--;
+                }
+            }
+            if (openBrackets != 0) throw new Exception("Extra Open Brackets Error in Field Property!");
+
+            string last = s.Substring(lastIndex + 1);
+            if (!string.IsNullOrWhiteSpace(last)) lst.Add(last.Replace(" ", ""));
+
+            return lst.ToArray();
+        } 
     }
 }

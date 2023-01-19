@@ -17,12 +17,15 @@ namespace NetCrud.Rest.Example.Definations
         {
         }
 
-        public override Task<User> BeforeWrite(User entity, ServiceActionType actionType)
+        public override Task<object> Before(IList<User> entities, ServiceActionType actionType)
         {
-            
-            entity.CreatedAt = DateTime.UtcNow;
-            entity.ModifiedAt = DateTime.UtcNow;
-            return base.BeforeWrite(entity, actionType);
+            foreach (var entity in entities)
+            {
+                entity.CreatedAt = DateTime.UtcNow;
+                entity.ModifiedAt = DateTime.UtcNow;
+
+            }
+            return base.Before(entities, actionType);
         }
 
 

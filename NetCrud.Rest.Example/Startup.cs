@@ -20,6 +20,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using NetCrud.Rest.Example.Definations;
 using NetCrud.Rest.Core;
+using NetCrud.Rest.EntityFramework;
 
 namespace NetCrud.Rest.Example
 {
@@ -62,6 +63,7 @@ namespace NetCrud.Rest.Example
 
             services.AddDbContext<CrubDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Default")));
             services.AddScoped<IRepository<User>, Repository<User, CrubDbContext>>();
+            services.AddScoped<IDataShaper<User>, DataShaper<User>>();
             services.AddScoped<IUnitOfWork, UnitOfWork<CrubDbContext>>();
 
             services.AddHttpContextAccessor();

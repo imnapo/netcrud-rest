@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace NetCrud.Rest.Data
+namespace NetCrud.Rest.EntityFramework
 {
   public class UnitOfWork<T> : IUnitOfWork where T : DbContext
   {

@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\NetCrud.Rest.EntityFramework\NetCrud.Rest.EntityFramework.csproj" />
     <ProjectReference Include="..\NetCrud.Rest\NetCrud.Rest.csproj" />
   </ItemGroup>
 

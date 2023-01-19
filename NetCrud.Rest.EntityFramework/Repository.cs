@@ -8,11 +8,12 @@ using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using NetCrud.Rest.Core;
-using NetCrud.Rest.Data.Extensions;
 using NetCrud.Rest.Models;
 using System.Reflection;
+using NetCrud.Rest.Data;
+using NetCrud.Rest.EntityFramework.Extensions;
 
-namespace NetCrud.Rest.Data
+namespace NetCrud.Rest.EntityFramework
 {
     public class Repository<TEntity, TId, TContext> : IRepository<TEntity> where TEntity : EntityBase<TId> where TContext : DbContext
     {
@@ -305,7 +306,7 @@ namespace NetCrud.Rest.Data
             {
                 await ApplyAtomics(item, navigations);
             }
-            
+
         }
 
         private async Task ApplyAtomics(TEntity item, string[] navigations)
@@ -490,6 +491,20 @@ namespace NetCrud.Rest.Data
             var entry = _context.Entry(model);
             if (entry != null)
                 await entry.ReloadAsync();
+        }
+
+        public Dictionary<string, object> GetChangedProperties(TEntity model)
+        {
+            var entry = _context.Entry(model);
+            Dictionary<string, object> properties = new Dictionary<string, object>();
+            // Gets all properties from the changed entity by reflection.
+            foreach (var entityProperty in entry.Properties)
+            {           
+                if (entityProperty.IsModified)
+                    properties.Add(entityProperty.Metadata.Name, entityProperty.OriginalValue);             
+            }
+
+            return properties;
         }
     }
 

@@ -15,10 +15,12 @@ namespace NetCrud.Rest.Controllers
     public abstract class CrudControllerBase<TEntity, TId, TParams> : ControllerBase where TEntity : EntityBase<TId> where TParams : GetAllQueryStringParameters<TEntity>
     {
         private readonly IEntityService<TEntity, TId> service;
+        private readonly IDataShaper<TEntity> dataShaper;
 
-        public CrudControllerBase(IEntityService<TEntity, TId> service)
+        public CrudControllerBase(IEntityService<TEntity, TId> service, IDataShaper<TEntity> dataShaper)
         {
             this.service = service;
+            this.dataShaper = dataShaper;
         }
 
         [HttpGet]
@@ -27,34 +29,36 @@ namespace NetCrud.Rest.Controllers
             if (!request.Paged)
             {
                 var entities = await service.GetAll(request);
-                return Ok(entities);
+                var shapedData = request.ApplyDataShaping(dataShaper, entities);
+
+                return Ok(shapedData);
             }
             else
             {
                 var entities = await service.GetAllPaged(request);
-
+                var shapedData = request.ApplyDataShaping(dataShaper, entities);
                 Pageable pageable = new Pageable();
-                pageable.LoadPagedList(entities);
+                pageable.LoadPagedList(shapedData);
 
                 //if (mediaType == "application/vnd.Nv.hateoas+json")
                 //{
                 Response.Headers.Add("X-Pagination",
                 Newtonsoft.Json.JsonConvert.SerializeObject(pageable));
                 //}
-                return Ok(entities);
+                return Ok(shapedData);
             }
         }
 
         [HttpGet("{id}")]
-        
-        public virtual async Task<IActionResult> GetAsync([FromRoute] TId id, [FromQuery] GetQueryStringParameters parameters)
+
+        public virtual async Task<IActionResult> GetAsync([FromRoute] TId id, [FromQuery] GetQueryStringParameters<TEntity> parameters)
         {
             var entity = await service.Get(id, false, parameters.GetIncludes());
 
             if (entity == null)
                 return NotFound();
-
-            return Ok(entity);
+            var shapData = parameters.ApplyDataShaping(dataShaper, entity);
+            return Ok(shapData);
         }
 
         [HttpPost]
@@ -112,7 +116,7 @@ namespace NetCrud.Rest.Controllers
     [ApiController]
     public abstract class CrudControllerBase<TEntity> : CrudControllerBase<TEntity, int, GetAllQueryStringParameters<TEntity>> where TEntity : EntityBase<int>
     {
-        protected CrudControllerBase(IEntityService<TEntity,int> service) : base(service)
+        protected CrudControllerBase(IEntityService<TEntity, int> service, IDataShaper<TEntity> dataShaper) : base(service, dataShaper)
         {
         }
     }
@@ -120,7 +124,7 @@ namespace NetCrud.Rest.Controllers
     [ApiController]
     public abstract class CrudControllerBase<TEntity, TId> : CrudControllerBase<TEntity, TId, GetAllQueryStringParameters<TEntity>> where TEntity : EntityBase<TId>
     {
-        protected CrudControllerBase(IEntityService<TEntity, TId> service) : base(service)
+        protected CrudControllerBase(IEntityService<TEntity, TId> service, IDataShaper<TEntity> dataShaper) : base(service, dataShaper)
         {
         }
     }

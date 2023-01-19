@@ -16,7 +16,7 @@ namespace NetCrud.Rest.Example.Controllers
     [ApiController]
     public class UsersController : CrudControllerBase<User>
     {
-        public UsersController(IEntityService<User, int> service) : base(service)
+        public UsersController(IEntityService<User, int> service, IDataShaper<User> dataShaper) : base(service, dataShaper)
         {
         }
     }
