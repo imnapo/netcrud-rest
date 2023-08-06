@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.JsonPatch;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+﻿//using Microsoft.AspNetCore.JsonPatch;
+//using Microsoft.AspNetCore.Mvc.ModelBinding;
 using NetCrud.Rest.Data;
 using NetCrud.Rest.Models;
 using System.Collections.Generic;

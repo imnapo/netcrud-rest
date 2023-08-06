@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30114.105
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33530.505
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8E5609E5-DD10-4C2B-84BC-F6D13787EADA}"
 	ProjectSection(SolutionItems) = preProject
@@ -16,7 +16,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetCrud.Rest.Example", "Net
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetCrud.Rest.Test", "NetCrud.Rest.Test\NetCrud.Rest.Test.csproj", "{247CDAEA-5CCE-48EA-88E4-B19D1604AE83}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetCrud.Rest.EntityFramework", "NetCrud.Rest.EntityFramework\NetCrud.Rest.EntityFramework.csproj", "{54B1413D-41F2-4471-BD63-066AA90198F5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetCrud.Rest.EntityFramework", "NetCrud.Rest.EntityFramework\NetCrud.Rest.EntityFramework.csproj", "{54B1413D-41F2-4471-BD63-066AA90198F5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetCrud.Rest.Core", "NetCrud.Rest.Core\NetCrud.Rest.Core.csproj", "{9B6DF563-009E-4D24-8E35-45624D8795AA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,6 +42,10 @@ Global
 		{54B1413D-41F2-4471-BD63-066AA90198F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{54B1413D-41F2-4471-BD63-066AA90198F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{54B1413D-41F2-4471-BD63-066AA90198F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B6DF563-009E-4D24-8E35-45624D8795AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B6DF563-009E-4D24-8E35-45624D8795AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B6DF563-009E-4D24-8E35-45624D8795AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B6DF563-009E-4D24-8E35-45624D8795AA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
