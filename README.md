@@ -267,25 +267,8 @@ GET /customers?include=purchases&field=purchases.name
 or
 
 ```http
-GET /customers?include=purchases&fields=purchases[name,product.name]
+GET /purchases?include=customer,product&field=id,customer
 ```
-
-Example for an included HasMany relationship:
-
-```http
-GET /articles?include=revisions&fields[revisions]=publishTime
-```
-
-Example for both top-level and relationship:
-
-```http
-GET /articles?include=author&fields[articles]=title,body,author&fields[authors]=name HTTP/1.1
-```
-
-> [!NOTE]
-> In the last example, the `author` relationship is also added to the `articles` fieldset, so that the relationship from article to author is returned.
-When omitted, you'll get the included resources returned, but without full resource linkage (as described [here](https://jsonapi.org/examples/#sparse-fieldsets)).
-
 
 # Including Relationships
 
