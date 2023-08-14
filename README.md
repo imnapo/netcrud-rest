@@ -182,4 +182,143 @@ The last required layer for using this pacakge is implementing the `IDataShaper<
 builder.Services.AddScoped<IDataShaper<User>, DataShaper<User>>()
 ```
 
+# Filtering
 
+Entities can be filtered by properties using the `filter` query string parameter. Expressions are composed using the following functions:
+
+| Operation                     | Function           | Example                                               |
+|-------------------------------|--------------------|-------------------------------------------------------|
+| Equality                      | `equals`           | `?filter=equals(name,'John Smith')`                    |
+| Less than                     | `lessThan`         | `?filter=lessThan(age,21)`                          |
+| Less than or equal to         | `lessOrEqual`      | `?filter=lessOrEqual(purchaseDate,'2022-01-01')`      |
+| Greater than                  | `greaterThan`      | `?filter=greaterThan(price,20)`             |
+| Greater than or equal to      | `greaterOrEqual`   | `?filter=greaterOrEqual(percentage,'33.33')`          |
+| Contains text                 | `contains`         | `?filter=contains(name,'cooking')`             |
+| Starts with text              | `startsWith`       | `?filter=startsWith(description,'The')`               |
+| Ends with text                | `endsWith`         | `?filter=endsWith(description,'late')`                 |
+| Equals one value from set     | `any`              | `?filter=any(purchases,greaterThan(purchaseDate,'2022-01-01'))` |
+| Collection contains items     | `has`              | `?filter=has(purchases)`                               |
+| Negation                      | `not`              | `?filter=not(equals(age,21))`                  |
+| Conditional logical OR        | `or`               | `?filter=or(lessThan(price,100),has(purchases))`               |
+| Conditional logical AND       | `and`              | `?filter=and(has(purchases),equals(age,21))`              |
+
+
+Aside from filtering on the entity being requested (which would be customres in /customres), 
+filtering on to-many relationships can be done using any operation:
+
+```http
+GET /customers?include=purchases&filter=and(lessThan(age,21),any(purchases,greaterThan(purchaseDate,'2022-01-01')))
+```
+
+In the above request, the first filter is applied on the collection of customers, while the second one is applied on the nested collection of purchases.
+
+# Sorting
+
+entities can be sorted by one or more attributes in ascending or descending order. The default is ascending by ID.
+
+## Ascending
+
+```http
+GET /api/customers?sort=name
+```
+
+## Descending
+
+To sort descending, prepend the attribute with a minus (-) sign.
+
+```http
+GET /api/customers?sort=-age
+```
+
+## Multiple attributes
+
+Multiple attributes are separated by a comma.
+
+```http
+GET /api/customers?sort=name,-age
+```
+
+# Pagination
+
+Entities can be paginated. This request would fetch the second page of 10 articles (articles 11 - 20).
+
+```http
+GET /customers?pageSize=10&pageNumber=2
+```
+
+# Field Selection
+
+As an alternative to returning all fields (attributes and relationships) from a resource, the `field` query string parameter can be used to select a subset.
+The selection is applied on both primary and included entities.
+
+Example:
+
+```http
+GET /customers?field=name,age
+```
+
+When combined with the `include` query string parameter, a subset of related fields can be specified too.
+
+Example for an included HasOne relationship:
+
+```http
+GET /customers?include=purchases&field=purchases.name
+```
+or
+
+```http
+GET /customers?include=purchases&fields=purchases[name,product.name]
+```
+
+Example for an included HasMany relationship:
+
+```http
+GET /articles?include=revisions&fields[revisions]=publishTime
+```
+
+Example for both top-level and relationship:
+
+```http
+GET /articles?include=author&fields[articles]=title,body,author&fields[authors]=name HTTP/1.1
+```
+
+> [!NOTE]
+> In the last example, the `author` relationship is also added to the `articles` fieldset, so that the relationship from article to author is returned.
+When omitted, you'll get the included resources returned, but without full resource linkage (as described [here](https://jsonapi.org/examples/#sparse-fieldsets)).
+
+
+# Including Relationships
+
+NetCrud-rest supports inclustion, for side-loading related entities.
+
+```http
+GET /purchases?include=customer,product
+
+[
+    {
+        "customerId":6,
+        "customer":{"name":"Noel Bernier","age":39,"address":null,"id":6},
+        "productId":4,
+        "product":{"name":"Ball","price":185.0,"id":4},
+        "purchaseDate":"2023-02-08T14:41:28.8418719",
+        "id":1
+    },
+    {
+        "customerId":66,
+        "customer":{"name":"Roy Lebsack","age":21,"address":null,"id":66},
+        "productId":7,
+        "product":{"name":"Mouse","price":189.0,"id":7},
+        "purchaseDate":"2023-08-06T13:49:47.48639",
+        "id":2
+    }
+]
+```
+
+## Nested Inclusions
+
+NetCrud-rest also supports nested inclusions.
+This allows you to include data across relationships, for example:
+
+```http
+GET /api/purchases?include=customer.address
+```

@@ -10,19 +10,18 @@ using System.Threading.Tasks;
 
 namespace NetCrud.Rest.Example.Definations
 {
-    public class UserService : EntityService<User, int>
+    public class PurchaseService : EntityService<Purchase, int>
     {
-        public UserService(IRepository<User> repository, IUnitOfWork unitOfWork)
+        public PurchaseService(IRepository<Purchase> repository, IUnitOfWork unitOfWork)
         : base(repository, unitOfWork)
         {
         }
 
-        public override Task<object> Before(IList<User> entities, ServiceActionType actionType)
+        public override Task<object> Before(IList<Purchase> entities, ServiceActionType actionType)
         {
             foreach (var entity in entities)
             {
-                entity.CreatedAt = DateTime.UtcNow;
-                entity.ModifiedAt = DateTime.UtcNow;
+                entity.PurchaseDate = DateTime.UtcNow;
 
             }
             return base.Before(entities, actionType);

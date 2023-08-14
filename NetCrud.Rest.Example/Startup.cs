@@ -1,6 +1,5 @@
 using AutoMapper;
 using NetCrud.Rest.Example.Models;
-using NetCrud.Rest.Example.Profiles;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -58,20 +57,30 @@ namespace NetCrud.Rest.Example
 
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "NPSApi", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "NetCrud_Rest_Api", Version = "v1" });
             });
 
-            services.AddDbContext<CrubDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Default")));
-            services.AddScoped<IRepository<User>, Repository<User, CrubDbContext>>();
-            services.AddScoped<IDataShaper<User>, DataShaper<User>>();
-            services.AddScoped<IUnitOfWork, UnitOfWork<CrubDbContext>>();
+            services.AddDbContext<NetCrudDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Default")));
+            
+            //Register Service, Repository and DataShaper for Purchase Entity
+            services.AddScoped<IRepository<Purchase>, Repository<Purchase, NetCrudDbContext>>();
+            services.AddScoped<IEntityService<Purchase, int>, PurchaseService>();
+            services.AddScoped<IDataShaper<Purchase>, DataShaper<Purchase>>();
+
+            //Register Service, Repository and DataShaper for Customer Entity
+            services.AddScoped<IRepository<Customer>, Repository<Customer, NetCrudDbContext>>();
+            services.AddScoped<IEntityService<Customer, int>, EntityService<Customer>>();
+            services.AddScoped<IDataShaper<Customer>, DataShaper<Customer>>();
+
+            //Register Service, Repository and DataShaper for Product Entity
+            services.AddScoped<IRepository<Product>, Repository<Product, NetCrudDbContext>>();
+            services.AddScoped<IEntityService<Product, int>, EntityService<Product>>();
+            services.AddScoped<IDataShaper<Product>, DataShaper<Product>>();
+
+            services.AddScoped<IUnitOfWork, UnitOfWork<NetCrudDbContext>>();
 
             services.AddHttpContextAccessor();
-            services.AddScoped<IEntityService<User, int>, UserService>();
-            services.AddSingleton(provider => new MapperConfiguration(cfg =>
-            {
-                cfg.AddProfile(new MapperProfile());
-            }).CreateMapper());
+           
 
             //services.AddCors(options =>
             //{
@@ -108,17 +117,15 @@ namespace NetCrud.Rest.Example
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            this.InitializeDatabase(app);
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "NPSApi v1"));
 
-                using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
-                {
-                    var context = serviceScope.ServiceProvider.GetRequiredService<CrubDbContext>();
-                    context.Seed().GetAwaiter().GetResult();
-                }
+                this.SeedDatabase(app);
             }
 
             app.UseRouting();
@@ -129,6 +136,23 @@ namespace NetCrud.Rest.Example
             {
                 endpoints.MapControllers();
             });
+        }
+
+        public virtual void InitializeDatabase(IApplicationBuilder app)
+        {
+            using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+            {
+                serviceScope.ServiceProvider.GetRequiredService<NetCrudDbContext>().Database.Migrate();
+            }
+        }
+
+        public void SeedDatabase(IApplicationBuilder app)
+        {
+            using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+            {
+                var context = serviceScope.ServiceProvider.GetRequiredService<NetCrudDbContext>();
+                context.Seed().GetAwaiter().GetResult();
+            }
         }
     }
 }
