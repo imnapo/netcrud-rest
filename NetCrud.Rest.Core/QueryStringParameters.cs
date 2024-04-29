@@ -12,9 +12,9 @@ namespace NetCrud.Rest.Core
     public class GetQueryStringParameters<TEntity> where TEntity : class
     {
 
-        public string Include { get; set; }
+        public string? Include { get; set; }
 
-        public string Field { get; set; }
+        public string? Field { get; set; }
 
         public virtual IEnumerable<object> ApplyDataShaping(IDataShaper<TEntity> dataShaper, IEnumerable<TEntity> query)
         {
@@ -57,14 +57,14 @@ namespace NetCrud.Rest.Core
     public class GetAllQueryStringParameters<TEntity> : GetQueryStringParameters<TEntity> where TEntity : class
     {
 
-        public bool Paged { get; set; } = true;
+        public bool? Paged { get; set; } = true;
 
         const int maxPageSize = 500;
 
-        public int PageNumber { get; set; } = 1;
+        public int? PageNumber { get; set; } = 1;
 
         private int _pageSize = 20;
-        public int PageSize
+        public int? PageSize
         {
             get
             {
@@ -72,13 +72,13 @@ namespace NetCrud.Rest.Core
             }
             set
             {
-                _pageSize = (value > maxPageSize) ? maxPageSize : value;
+                _pageSize = (value is not null && value < maxPageSize) ? value.Value : maxPageSize;
             }
         }
 
-        public string Filter { get; set; }
+        public string? Filter { get; set; } = string.Empty;
 
-        public string Sort { get; set; }
+        public string? Sort { get; set; } = string.Empty ;
 
         public virtual IQueryable<TEntity> ApplyFilter(IQueryable<TEntity> query)
         {
@@ -105,7 +105,7 @@ namespace NetCrud.Rest.Core
 
     public class IncludeInfo
     {
-        public static IList<IncludeInfo> GetIncludes(string includesString, IList<IncludeInfo> includes = null)
+        public static IList<IncludeInfo> GetIncludes(string includesString, IList<IncludeInfo>? includes = null)
         {
             var requiredIncludes = includes ?? new List<IncludeInfo>();
             if (!string.IsNullOrWhiteSpace(includesString))
@@ -171,14 +171,14 @@ namespace NetCrud.Rest.Core
 
         public string[] GetIncludeStrings()
         {
-            List<string> lst = new List<string>();
+            List<string> lst = [];
             if (Includes.Count > 0)
                 foreach (var item in Includes)
                 {
                     lst.AddRange(item.GetIncludeStrings().Select(x => $"{PropertyName.UppercaseFirst()}.{x}"));
                 }
             else lst.Add($"{PropertyName.UppercaseFirst()}");
-            return lst.ToArray();
+            return [.. lst];
         }
     }
 }

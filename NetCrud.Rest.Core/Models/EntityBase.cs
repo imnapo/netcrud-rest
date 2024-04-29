@@ -6,7 +6,7 @@ namespace NetCrud.Rest.Models
 
     public class EntityBase<T>
     {
-        public T Id { get; set; }
+        public T? Id { get; set; }
 
         public override bool Equals(object obj)
         {
@@ -20,7 +20,7 @@ namespace NetCrud.Rest.Models
 
             if (GetType() != other.GetType())
                 return false;
-            T temp = default(T);
+            T? temp = default;
 
             if (EqualityComparer<T>.Default.Equals(Id, temp) || EqualityComparer<T>.Default.Equals(other.Id, temp))
                 return false;

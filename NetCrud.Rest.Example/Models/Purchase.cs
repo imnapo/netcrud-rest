@@ -1,4 +1,5 @@
 ﻿using NetCrud.Rest.Models;
+using Newtonsoft.Json;
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -9,6 +10,7 @@ namespace NetCrud.Rest.Example.Models
         [ForeignKey("Customer")]
         public int CustomerId { get; set; }
 
+        [JsonIgnore]
         public Customer Customer { get; set; }
 
         [ForeignKey("Product")]

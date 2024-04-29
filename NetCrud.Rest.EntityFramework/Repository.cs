@@ -385,7 +385,7 @@ namespace NetCrud.Rest.EntityFramework
         {
             _table.Remove(entity);
 
-
+            
         }
 
         public async Task<IList<TEntity>> FindAsync(Func<IQueryable<TEntity>, IQueryable<TEntity>> func = null, Func<IQueryable<TEntity>, IQueryable<TEntity>> sort = null, params string[] navigationProperties)

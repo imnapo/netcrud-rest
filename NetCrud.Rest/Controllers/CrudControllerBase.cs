@@ -26,7 +26,7 @@ namespace NetCrud.Rest.Controllers
         [HttpGet]
         public virtual async Task<IActionResult> GetAllAsync([FromQuery] TParams request)
         {
-            if (!request.Paged)
+            if (request.Paged.HasValue && !request.Paged.Value)
             {
                 var entities = await service.GetAll(request);
                 var shapedData = request.ApplyDataShaping(dataShaper, entities);
@@ -42,8 +42,8 @@ namespace NetCrud.Rest.Controllers
 
                 //if (mediaType == "application/vnd.Nv.hateoas+json")
                 //{
-                Response.Headers.Add("X-Pagination",
-                Newtonsoft.Json.JsonConvert.SerializeObject(pageable));
+                
+                Response.Headers["X-Pagination"] = Newtonsoft.Json.JsonConvert.SerializeObject(pageable);
                 //}
                 return Ok(shapedData);
             }

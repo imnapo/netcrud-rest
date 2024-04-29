@@ -1,4 +1,5 @@
 ﻿using NetCrud.Rest.Models;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace NetCrud.Rest.Example.Models
@@ -9,6 +10,7 @@ namespace NetCrud.Rest.Example.Models
 
         public double Price { get; set; }
 
+        [JsonIgnore]
         public ICollection<Purchase> Purchases { get; set; }
     }
 }

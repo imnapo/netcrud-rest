@@ -14,7 +14,7 @@ namespace NetCrud.Rest.Core
         public Task<TEntity> Create(TEntity entity);
         public Task<TEntity> Update(TEntity entity);
         public Task<TEntity> Delete(object id);
-        public Task<TEntity> Get(object id, bool forUpdate =false, string[] naviations = null);
+        public Task<TEntity> Get(object id, bool forUpdate =false, string[]? naviations = null);
         public Task<IList<TEntity>> GetAll(GetAllQueryStringParameters<TEntity> request);
         public Task<IPagedList<TEntity>> GetAllPaged(GetAllQueryStringParameters<TEntity> request);
     }

@@ -26,7 +26,7 @@ namespace NetCrud.Rest.Core
             return FetchDataForEntity(entity, requiredProperties);
         }
 
-        private IList<FieldInfo> GetRequiredProperties(string fieldsString, Type type, IList<FieldInfo> propertyNames = null)
+        private IList<FieldInfo> GetRequiredProperties(string fieldsString, Type type, IList<FieldInfo>? propertyNames = null)
         {
             var requiredProperties = propertyNames ?? new List<FieldInfo>();
             if (!string.IsNullOrWhiteSpace(fieldsString))

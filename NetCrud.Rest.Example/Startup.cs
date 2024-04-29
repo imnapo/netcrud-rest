@@ -42,7 +42,7 @@ namespace NetCrud.Rest.Example
             }).AddNewtonsoftJson(option =>
             {
                 option.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
-                option.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+                option.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Error;
             }).AddMvcOptions(options =>
             {
                 var jsonOutputFormater = options.OutputFormatters.OfType<NewtonsoftJsonOutputFormatter>();

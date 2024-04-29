@@ -17,16 +17,16 @@ namespace NetCrud.Rest.Core
             this.repository = repository;
             this.unitOfWork = unitOfWork;
         }
-        public virtual Task After(IList<TEntity> entities, ServiceActionType actionType, object data = null)
+        public virtual Task After(IList<TEntity> entities, ServiceActionType actionType, object? data = null)
         {
             return Task.CompletedTask;
         }
 
       
 
-        public virtual Task<object> Before(IList<TEntity> entities, ServiceActionType actionType)
+        public virtual Task<object?> Before(IList<TEntity> entities, ServiceActionType actionType)
         {
-            object obj = null;
+            object? obj = null;
             return Task.FromResult(obj);
         }
 
@@ -42,10 +42,10 @@ namespace NetCrud.Rest.Core
             return entity;
         }
 
-        public async Task<TEntity> Delete(object id)
+        public async Task<TEntity?> Delete(object id)
         {
             var entity = await repository.FindByIdAsync(id);
-            if (entity != null)
+            if (entity is not null)
             {
                 var data = await this.Before(new List<TEntity> { entity }, ServiceActionType.Delete);
                 repository.Delete(entity);
@@ -56,9 +56,9 @@ namespace NetCrud.Rest.Core
             else return null;
         }
 
-        public async Task<TEntity> Get(object id, bool forUpdate = false, string[] naviations = null)
+        public async Task<TEntity> Get(object id, bool forUpdate = false, string[]? naviations = null)
         {
-            var entity = await repository.FindByIdAsync(id, forUpdate, naviations);
+            var entity = await repository.FindByIdAsync(id, forUpdate, naviations ?? []);
             await this.After(new List<TEntity> { entity }, ServiceActionType.Read);
             return entity;
         }
@@ -71,17 +71,18 @@ namespace NetCrud.Rest.Core
 
         public async Task<IPagedList<TEntity>> GetAllPaged(GetAllQueryStringParameters<TEntity> request)
         {
-            var entities = await repository.FindPagedAsync(q => request.ApplyFilter(q), q => request.ApplySort(q), request.PageNumber - 1, request.PageSize, false, request.GetIncludes());
+
+            var entities = await repository.FindPagedAsync(q => request.ApplyFilter(q), q => request.ApplySort(q), (request.PageNumber ?? 0) - 1, request.PageSize ?? 10, false, request.GetIncludes());
             await this.After(entities, ServiceActionType.Read);
             return entities;
         }
 
         public async Task<TEntity> Update(TEntity entity)
         {
-            object data = await this.Before(new List<TEntity> { entity }, ServiceActionType.Update);
+            object? data = await this.Before(new List<TEntity> { entity }, ServiceActionType.Update);
             repository.Update(entity);
             await unitOfWork.CommitAsync();
-            await this.After(new List<TEntity> { entity }, ServiceActionType.Update, data);
+            await this.After([entity], ServiceActionType.Update, data);
             return entity;
         }
 
