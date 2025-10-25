@@ -6,7 +6,7 @@ namespace NetCrud.Rest.Models
 
     public class EntityBase<T>
     {
-        public T? Id { get; set; }
+        public virtual T? Id { get; set; }
 
         public override bool Equals(object obj)
         {

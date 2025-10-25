@@ -70,7 +70,7 @@ namespace NetCrud.Rest.Core
         static char[] alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToLower().ToCharArray();
         //int lastCharIndex = 0;
 
-        public static string DeserializeFilter(string queries, bool addParenthesis = true,bool addPrefix = false, int charIndex = -1)
+        public static string DeserializeFilter(string queries, bool addParenthesis = true, bool addPrefix = false, int charIndex = -1)
         {
             int ptStartIndex = queries.IndexOf('(');
             if (ptStartIndex < 0) return (addPrefix ? $"{alpha[charIndex]}." : "") + queries.UppercaseFirst();
@@ -124,8 +124,8 @@ namespace NetCrud.Rest.Core
                         nextCharIndex++;
                     if (addPrefix && (myFunc.PassToAllArgs || counter == 0))
                         needsNav = true;
-                    
-                   
+
+
                     results.Add(DeserializeFilter(item, myFunc.AddParenthesis, needsNav, needsNav ? nextCharIndex : charIndex));
                     counter++;
                 }
@@ -150,7 +150,19 @@ namespace NetCrud.Rest.Core
         {
             string[] orders = sortQuery.Split(",").Select(s =>
             {
-                return (s.StartsWith("-") ? $"{s.Substring(1).UppercaseFirst()} DESC" : s.UppercaseFirst());
+                string ss = s.Trim();
+                if (ss.EndsWith("=null"))
+                {
+                    return ($"{ss.Replace("=null", "").UppercaseFirst()} == null ? 0 : 1");
+                }
+                if (ss.StartsWith("-"))
+                {
+                    return ($"{ss.Substring(1).UppercaseFirst()} DESC");
+                }
+                else
+                {
+                    return (ss.UppercaseFirst());
+                }
             }).ToArray();
             if (orders != null && orders.Count() > 0)
                 return string.Join(",", orders);

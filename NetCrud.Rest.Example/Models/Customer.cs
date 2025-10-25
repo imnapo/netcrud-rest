@@ -1,5 +1,6 @@
 ﻿using NetCrud.Rest.Core;
 using NetCrud.Rest.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -13,6 +14,8 @@ namespace NetCrud.Rest.Example.Models
 
         //[ForeignKey("Address")]
         //public int? AddressId { get; set; }
+
+        public DateTime? LastOrderedDate { get; set; }
 
         [EagerLoad]
         public Address Address { get; set; }

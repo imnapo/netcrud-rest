@@ -1,5 +1,6 @@
 ﻿using Bogus;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -13,6 +14,7 @@ namespace NetCrud.Rest.Example.Models
 
             var testCustomers = new Faker<Customer>()
                 .RuleFor(o => o.Name, f => f.Person.FullName)
+                .RuleFor(o => o.LastOrderedDate, f => f.Random.Bool(0.7f) ? f.Date.Recent(100) : (DateTime?)null)
                 .RuleFor(o => o.Age, f => f.Random.Number(15, 60))
                 .RuleFor(o => o.Address, (f, u) => new Address { Customer = u, AddressText = f.Address.FullAddress() });
 
