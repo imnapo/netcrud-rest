@@ -60,7 +60,7 @@ namespace NetCrud.Rest.Example
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "NetCrud_Rest_Api", Version = "v1" });
             });
 
-            services.AddDbContext<NetCrudDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Default")));
+            services.AddDbContext<NetCrudDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Default")).EnableSensitiveDataLogging());
             
             //Register Service, Repository and DataShaper for Purchase Entity
             services.AddScoped<IRepository<Purchase>, Repository<Purchase, NetCrudDbContext>>();
